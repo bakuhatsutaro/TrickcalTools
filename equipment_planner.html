@@ -1024,9 +1024,34 @@ function onCalcModeChange() {
 let currentStages = null;
 let currentAnalysis = null;
 
+function getStagePosition(stage) {
+  const match = stage.match(/^(\d+)-(\d+)$/);
+  return match ? [Number(match[1]), Number(match[2])] : [-1, -1];
+}
+
+function isLaterStage(candidate, current) {
+  const [candidateChapter, candidateNumber] = getStagePosition(candidate.stage);
+  const [currentChapter, currentNumber] = getStagePosition(current.stage);
+  return candidateChapter > currentChapter ||
+    (candidateChapter === currentChapter && candidateNumber > currentNumber);
+}
+
+function keepLatestDuplicateDrops(stages) {
+  const latestByDrops = new Map();
+  for (const stage of stages) {
+    const dropsKey = stage.drops
+      .map(drop => `${drop.id}_${drop.type}_${drop.rank}`)
+      .sort()
+      .join('|');
+    const current = latestByDrops.get(dropsKey);
+    if (!current || isLaterStage(stage, current)) latestByDrops.set(dropsKey, stage);
+  }
+  return Array.from(latestByDrops.values());
+}
+
 function processData(stages) {
-  currentStages = stages;
-  currentAnalysis = analyzeData(stages);
+  currentStages = keepLatestDuplicateDrops(stages);
+  currentAnalysis = analyzeData(currentStages);
   const { minRank, maxRank } = currentAnalysis;
   buildTargetInputs(minRank, maxRank);
   buildRankScoreInputs(minRank, maxRank);
@@ -1034,8 +1059,8 @@ function processData(stages) {
   onCalcModeChange();
   document.addEventListener('input', saveFormState);
   document.addEventListener('change', saveFormState);
-  renderStageTable(stages, maxRank);
-  renderDistTable(stages, maxRank, maxRank - 1);
+  renderStageTable(currentStages, maxRank);
+  renderDistTable(currentStages, maxRank, maxRank - 1);
   document.getElementById('calcBtn').disabled = false;
 }
 
