@@ -1,0 +1,1465 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>トリッカル 装備管理</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+      color: #182b3e;
+      background: #f3f6fa;
+      font-size: 16px;
+      line-height: 1.6;
+      --equipment-header-font-size: 1.02rem;
+      /* adjustable font-size for equipment header row */
+      accent-color: #1768ce
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0
+    }
+
+    header {
+      background: #16324e;
+      color: white;
+      border-bottom: 4px solid #63cddd;
+      padding: 25px max(24px, calc((100vw - 1200px)/2))
+    }
+
+    header p {
+      margin: 0;
+      color: #a5d9e9;
+      font-size: .875rem;
+      letter-spacing: .12em
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 3px 0
+    }
+
+    main {
+      max-width: 1248px;
+      margin: auto;
+      padding: 28px 24px 60px
+    }
+
+    section {
+      background: white;
+      border: 1px solid #d8e1eb;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .step {
+      font-size: .8rem;
+      background: #e5effb;
+      color: #185aa8;
+      padding: 3px 9px;
+      border-radius: 5px
+    }
+
+    .help {
+      color: #506276;
+      font-size: .9rem;
+      margin: 8px 0 14px
+    }
+
+    textarea,
+    input[type=text] {
+      font: inherit;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      color: inherit;
+      background: white;
+      padding: 9px 11px
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.9
+    }
+
+    textarea:focus,
+    input:focus-visible,
+    button:focus-visible {
+      outline: 3px solid #84c3ff;
+      outline-offset: 2px
+    }
+
+    button {
+      font: inherit;
+      font-weight: 600;
+      border: 0;
+      border-radius: 7px;
+      background: #1768ce;
+      color: white;
+      cursor: pointer;
+      padding: 11px 22px
+    }
+
+    button:hover {
+      background: #1256ad
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 12px
+    }
+
+    .actions span {
+      font-size: .875rem;
+      color: #506276
+    }
+
+    #status {
+      margin-left: auto;
+      color: #375c79
+    }
+
+    .table-wrap {
+      overflow-x: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1050px
+    }
+
+    th {
+      background: #f0f5fa;
+      text-align: center;
+      font-size: .875rem;
+      color: #496078;
+      font-weight: 600;
+      padding: 12px 8px;
+      border-bottom: 1px solid #c6d5e3
+    }
+
+    /* Equipment header row font-size (can be adjusted via CSS variable) */
+    #table-head th,
+    #unknown-head th {
+      font-size: var(--equipment-header-font-size, 1.05rem);
+      padding: 14px 10px;
+      color: #2f4b5f;
+    }
+
+    td {
+      padding: 14px 8px;
+      border-bottom: 1px solid #e0e8f0;
+      text-align: center
+    }
+
+    th:first-child,
+    td:first-child {
+      width: 68px;
+      text-align: center
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      text-align: left;
+      width: 180px
+    }
+
+    th:nth-child(3) {
+      width: 76px
+    }
+
+    td input[type=text] {
+      width: 100%;
+      min-width: 40px;
+      max-width: 60px;
+      box-sizing: border-box;
+    }
+
+    td input[type=checkbox] {
+      width: 21px;
+      height: 21px;
+      cursor: pointer
+    }
+
+    td.not-applicable {
+      color: #9ba9b6
+    }
+
+    tbody tr:hover {
+      background: #f8fbff
+    }
+
+    #warnings {
+      margin-top: 18px;
+      border-left: 3px solid #d99623;
+      background: #fff8e9;
+      padding: 12px 18px;
+      font-size: .9rem
+    }
+
+    #warnings ul {
+      margin: 8px 0;
+      padding-left: 22px
+    }
+
+    #warnings p {
+      margin: 0
+    }
+
+    details {
+      color: #506276;
+      font-size: .875rem;
+      margin-top: 18px
+    }
+
+    summary {
+      cursor: pointer
+    }
+
+    code {
+      background: #edf2f7;
+      padding: 2px 5px;
+      border-radius: 3px
+    }
+
+    footer {
+      color: #64768a;
+      font-size: .875rem;
+      text-align: center
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    @media(max-width:600px) {
+      main {
+        padding: 18px 12px
+      }
+
+      header {
+        padding: 18px 16px
+      }
+
+      section {
+        padding: 18px 14px
+      }
+
+      h1 {
+        font-size: 1.35rem
+      }
+
+      .actions {
+        gap: 10px
+      }
+
+      #status {
+        margin-left: 0;
+        width: 100%
+      }
+    }
+
+    .confirm-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .9rem;
+      margin-top: 16px;
+      cursor: pointer
+    }
+
+    .confirm-option input {
+      width: 19px;
+      height: 19px
+    }
+
+    .delete-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 10px;
+      background: #fff0f0;
+      color: #a12b32
+    }
+
+    .delete-button:hover {
+      background: #ffdddd
+    }
+
+    .delete-button svg {
+      width: 20px;
+      height: 20px
+    }
+
+    .replace-button {
+      background: #42566e
+    }
+
+    .replace-button:hover {
+      background: #31445b
+    }
+
+    .attack-type {
+      display: inline-block;
+      min-width: 3.4em;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eaf1f8;
+      color: #344e67;
+      font-size: .875rem
+    }
+
+    .attack-type[data-type="物理"] {
+      background: #fff0e7;
+      color: #8a3b17
+    }
+
+    .attack-type[data-type="魔法"] {
+      background: #eeeaff;
+      color: #4e3b91
+    }
+
+    .json-tools {
+      margin: 18px 0;
+      padding: 16px;
+      background: #f0f5fa;
+      border-radius: 8px
+    }
+
+    .json-tools input[type=file] {
+      display: block;
+      max-width: 100%;
+      margin: 8px 0;
+      font: inherit
+    }
+
+    .mapping {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px
+    }
+
+    .mapping label {
+      display: flex;
+      flex-direction: column
+    }
+
+    .mapping select {
+      font: inherit;
+      padding: 8px;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      background: white
+    }
+
+    #import-error {
+      color: #9c202b;
+      background: #fff0f0;
+      padding: 12px;
+      border-radius: 6px
+    }
+
+    #file-status {
+      font-size: .875rem
+    }
+
+    td select {
+      font: inherit;
+      padding: 8px;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      background: white
+    }
+
+    select:focus-visible {
+      outline: 3px solid #84c3ff;
+      outline-offset: 2px
+    }
+
+    td input[type=checkbox]:disabled {
+      cursor: not-allowed
+    }
+
+    table {
+      min-width: 980px
+    }
+
+    .not-owned td:nth-child(2),
+    .not-owned td:nth-child(2) input {
+      color: #8997a5
+    }
+
+    .not-owned input:disabled {
+      background: #f1f4f7;
+      color: #8997a5
+    }
+
+    .file-area {
+      /* 上下・左の余白を調整できます。必要ならJavaScriptや外部CSSで変数を書き換えてください。 */
+      --fa-pt: 12px;
+      --fa-pb: 6px;
+      --fa-pl: 24px;
+      padding: var(--fa-pt) 0 var(--fa-pb) var(--fa-pl);
+      display: block;
+    }
+
+    .file-controls {
+      /* ボタン専用の領域。改行して配置されます。 */
+      padding-left: var(--fa-pl);
+      margin-top: 8px;
+    }
+  </style>
+  <style>
+    .filter-panel {
+      margin: 12px 0 16px;
+      padding: 14px 16px;
+      background: #f7faff;
+      border: 1px solid #d8e1eb;
+      border-radius: 9px
+    }
+
+    .filter-group {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr;
+      align-items: start;
+      gap: 10px;
+      margin: 8px 0
+    }
+
+    .filter-label {
+      font-size: .9rem;
+      color: #506276;
+      padding-top: 7px
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap
+    }
+
+    .filter-button {
+      min-width: 42px;
+      padding: 7px 10px;
+      background: #f0f5fa;
+      color: #496078;
+      border: 1px solid #c6d5e3
+    }
+
+    .filter-button:hover {
+      background: #e1ebf5
+    }
+
+    .filter-button[aria-pressed="true"] {
+      background: #1768ce;
+      color: white;
+      border-color: #1768ce
+    }
+
+    .clear-source-button {
+      background: white;
+      color: #8d2730;
+      border: 1px solid #d7a6aa
+    }
+
+    .clear-source-button:hover {
+      background: #fff0f0
+    }
+
+    .tool-nav {
+      background: #fff;
+      border-bottom: 1px solid #d8e1eb;
+      box-shadow: 0 2px 8px rgb(22 50 78 / 8%);
+    }
+
+    .tool-nav-inner {
+      max-width: 1248px;
+      margin: auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: stretch;
+      overflow-x: auto;
+    }
+
+    .tool-nav-brand {
+      flex: 0 0 auto;
+      align-self: center;
+      margin-right: 18px;
+      color: #16324e;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .tool-nav a {
+      flex: 0 0 auto;
+      padding: 12px 14px 10px;
+      border-bottom: 3px solid transparent;
+      color: #506276;
+      font-size: .9rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .tool-nav a:hover { background: #f3f8fd; color: #1768ce }
+    .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff }
+    .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px }
+
+    @media(max-width:600px) {
+      .filter-group {
+        grid-template-columns: 1fr;
+        gap: 3px
+      }
+
+      .filter-label {
+        padding-top: 0
+      }
+
+      .tool-nav-inner { padding: 0 12px }
+      .tool-nav-brand { margin-right: 8px }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <p>TRICKCAL / EQUIPMENT</p>
+    <h1>トリッカル 装備管理</h1>
+  </header>
+  <nav class="tool-nav" aria-label="ツール間の移動">
+    <div class="tool-nav-inner">
+      <span class="tool-nav-brand">TRICKCAL TOOLS</span>
+      <a href="apostle_equipment.html" aria-current="page">装備管理</a>
+      <a href="equipment_calc.html">必要量計算</a>
+      <a href="equipment_planner.html">周回計画</a>
+    </div>
+  </nav>
+  <main>
+    <section aria-labelledby="import-title">
+      <h2 id="import-title"><span class="step">01</span>装備データ入力</h2>
+      <form id="import-form">
+        <div class="json-tools">
+          <label for="json-file"><strong>データのインポート</strong></label>
+          <p id="file-source-info" class="file-controls" role="status" style="margin:0">いのせさん作の <a
+              href="https://trickcal.irlab.dev" target="_blank" rel="noopener">trickcal.irlab.dev</a>
+            から装備データのインポートができます。</p>
+          <div class="file-area">
+            <input id="json-file" type="file" accept=".json,application/json" aria-describedby="file-status">
+          </div>
+          <p id="file-status" role="status" style="margin:0">ファイル選択後、このボタンでJSONの内容を上書きできます。</p>
+          <div class="file-controls actions">
+            <button id="json-replace-button" type="button" class="replace-button" disabled>上書き（現在のデータ消去）</button>
+          </div>
+
+        </div>
+        <div class="source-area json-tools">
+          <label for="source"><strong>テキスト入力</strong></label>
+          <p class="help" id="input-help">例にあるように「使徒名 装備ランク
+            装備」の形式で入力してください。装備の部分は正式名称でも構いませんが、省略形や別称も使用できます。全角・半角、ひらがな・カタカナ、大文字・小文字は全て区別されません。</p>
+          <details class="help">
+            <summary>可能な別名</summary>
+            <ul>
+              <li>物理武器: 物理, 剣, けん, s</li>
+              <li>魔法武器: 魔法, 杖, つえ, w</li>
+              <li>鎧: よろい, 服, ふく, a</li>
+              <li>帽子: ぼうし, 帽, ぼう, h</li>
+              <li>煌めく装飾品: 煌めく, きらめく, 指輪, ゆびわ, r</li>
+              <li>ブーツ: 靴, くつ, b</li>
+              <li>華麗な装飾品: 華麗な, かれいな, 華麗, かれい, ネックレス, ねっくれす, 首飾り, 首, くびかざり,n</li>
+            </ul>
+          </details>
+          <div class="file-area">
+            <textarea id="source" aria-describedby="input-help" spellcheck="false"
+              placeholder="使徒A　７　物理武器 鎧 ブーツ&#10;使徒B ５ 魔法武器 帽子 煌めく装飾品 華麗な装飾品"></textarea>
+          </div>
+          <p id="import-error" role="alert" hidden></p>
+          <div class="file-controls actions">
+            <button type="submit" name="mode" value="replace" class="replace-button">上書き（現在のデータ消去）</button>
+            <button type="submit" name="mode" value="append">追加（重複は上書き）</button>
+            <button type="button" id="clear-source" class="clear-source-button">入力欄をクリア</button>
+          </div>
+          <p class="help">上書きは現在のデータを消去し、新しいデータを反映します。追加は同名の使徒の情報のみを上書きし、それ以外を残します。</p>
+          <p id="save-status" class="help" role="status" aria-live="polite">入力内容と装備データはこのブラウザーに自動保存されます。</p>
+          <label class="confirm-option"><input type="checkbox" id="skip-confirm">上書き・追加・削除・クリアの確認警告を表示しない</label>
+        </div>
+      </form>
+      <details>
+        <summary>読み取りのルール</summary>
+        <p>空行は無視し、最初の単語を使徒名、行内の最初の数字の列をランクとして読み取ります。装備名は部分一致で判定します。同名の使徒が複数ある場合は、入力の最後の行を採用します。名前の比較時には空白と全角数字を正規化します。
+        </p>
+        <p>ランクがない行や読み取れなかった文字は、下に注意を表示します。使徒名に空白を含めないでください。確認警告を省略しても、読み取り時の注意は表示します。</p>
+        <p>使徒名・初期レアリティ・性格・タイプ・配置・種族・攻撃タイプは、<a
+            href="https://wikiwiki.jp/thetrickal/%E4%BD%BF%E5%BE%92%E4%B8%80%E8%A6%A7/%E6%9C%AA%E5%AE%9F%E8%A3%85%E8%BE%BC%E3%81%BF%E7%89%88"
+            target="_blank" rel="noopener noreferrer">トリッカルWikiの使徒一覧</a>を2026年9月21日に確認したデータです。</p>
+      </details>
+    </section>
+    <section aria-labelledby="list-title">
+      <h2 id="list-title"><span class="step">02</span>登録済み使徒 <span id="status" role="status" aria-live="polite"></span>
+      </h2>
+      <p class="help">登録済みの全使徒を表示しています。使徒名と攻撃種別は固定です。所有済みの場合のみ、ランクと装備を編集できます。同じ項目内は複数候補のいずれか、異なる項目間はすべてに一致する使徒を表示します。
+      </p>
+      <div class="filter-panel" aria-label="登録済み使徒の絞り込み">
+        <div class="filter-group"><span class="filter-label">頭文字</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="kana"
+              data-filter-value="ア" aria-pressed="false">ア</button><button type="button" class="filter-button"
+              data-filter-category="kana" data-filter-value="カ" aria-pressed="false">カ</button><button type="button"
+              class="filter-button" data-filter-category="kana" data-filter-value="サ"
+              aria-pressed="false">サ</button><button type="button" class="filter-button" data-filter-category="kana"
+              data-filter-value="タ" aria-pressed="false">タ</button><button type="button" class="filter-button"
+              data-filter-category="kana" data-filter-value="ナ" aria-pressed="false">ナ</button><button type="button"
+              class="filter-button" data-filter-category="kana" data-filter-value="ハ"
+              aria-pressed="false">ハ</button><button type="button" class="filter-button" data-filter-category="kana"
+              data-filter-value="マ" aria-pressed="false">マ</button><button type="button" class="filter-button"
+              data-filter-category="kana" data-filter-value="ヤ" aria-pressed="false">ヤ</button><button type="button"
+              class="filter-button" data-filter-category="kana" data-filter-value="ラ"
+              aria-pressed="false">ラ</button><button type="button" class="filter-button" data-filter-category="kana"
+              data-filter-value="ワ" aria-pressed="false">ワ</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">初期レアリティ</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="rarity"
+              data-filter-value="1" aria-pressed="false">★1</button><button type="button" class="filter-button"
+              data-filter-category="rarity" data-filter-value="2" aria-pressed="false">★2</button><button type="button"
+              class="filter-button" data-filter-category="rarity" data-filter-value="3" aria-pressed="false">★3</button>
+          </div>
+        </div>
+        <div class="filter-group"><span class="filter-label">性格</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="personality"
+              data-filter-value="純粋" aria-pressed="false">純粋</button><button type="button" class="filter-button"
+              data-filter-category="personality" data-filter-value="冷静" aria-pressed="false">冷静</button><button
+              type="button" class="filter-button" data-filter-category="personality" data-filter-value="狂気"
+              aria-pressed="false">狂気</button><button type="button" class="filter-button"
+              data-filter-category="personality" data-filter-value="活発" aria-pressed="false">活発</button><button
+              type="button" class="filter-button" data-filter-category="personality" data-filter-value="憂鬱"
+              aria-pressed="false">憂鬱</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">タイプ</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="role"
+              data-filter-value="守備" aria-pressed="false">守備</button><button type="button" class="filter-button"
+              data-filter-category="role" data-filter-value="攻撃" aria-pressed="false">攻撃</button><button type="button"
+              class="filter-button" data-filter-category="role" data-filter-value="支援" aria-pressed="false">支援</button>
+          </div>
+        </div>
+        <div class="filter-group"><span class="filter-label">配置</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="position"
+              data-filter-value="前列" aria-pressed="false">前列</button><button type="button" class="filter-button"
+              data-filter-category="position" data-filter-value="中列" aria-pressed="false">中列</button><button
+              type="button" class="filter-button" data-filter-category="position" data-filter-value="後列"
+              aria-pressed="false">後列</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">種族</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="race"
+              data-filter-value="妖精" aria-pressed="false">妖精</button><button type="button" class="filter-button"
+              data-filter-category="race" data-filter-value="獣人" aria-pressed="false">獣人</button><button type="button"
+              class="filter-button" data-filter-category="race" data-filter-value="エルフ"
+              aria-pressed="false">エルフ</button><button type="button" class="filter-button" data-filter-category="race"
+              data-filter-value="精霊" aria-pressed="false">精霊</button><button type="button" class="filter-button"
+              data-filter-category="race" data-filter-value="幽霊" aria-pressed="false">幽霊</button><button type="button"
+              class="filter-button" data-filter-category="race" data-filter-value="竜族"
+              aria-pressed="false">竜族</button><button type="button" class="filter-button" data-filter-category="race"
+              data-filter-value="魔女" aria-pressed="false">魔女</button><button type="button" class="filter-button"
+              data-filter-category="race" data-filter-value="???" aria-pressed="false">???</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">攻撃タイプ</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="attackType"
+              data-filter-value="物理" aria-pressed="false">物理</button><button type="button" class="filter-button"
+              data-filter-category="attackType" data-filter-value="魔法" aria-pressed="false">魔法</button></div>
+        </div>
+      </div>
+      <div class="table-wrap" id="table-wrap">
+        <table>
+          <caption class="help">登録済み使徒と装備状況</caption>
+          <thead id="table-head"></thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+      <div id="warnings" hidden></div>
+    </section>
+    <section id="unknown-section" aria-labelledby="unknown-title" hidden>
+      <h2 id="unknown-title"><span class="step">03</span>未登録使徒 <span id="unknown-status"></span></h2>
+      <p class="help">使徒データベースに一致しなかった行です。攻撃種別は物理・魔法から選択できます。内容を確認し、不要な行は削除してください。</p>
+      <div class="table-wrap">
+        <table>
+          <caption class="help">未登録使徒と装備状況</caption>
+          <thead id="unknown-head"></thead>
+          <tbody id="unknown-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <footer>入力内容と装備データは、このブラウザーの <code>apostle_equipment</code> に自動保存されます。</footer>
+  </main>
+  <script>
+    'use strict';
+    const ITEM_TYPES = ['物理武器', '魔法武器', '鎧', '帽子', '煌めく装飾品', 'ブーツ', '華麗な装飾品'];
+    // 表示用ラベル（内部データは `ITEM_TYPES` を使う）
+    const DISPLAY_ITEM_LABELS = ['⬅️武器', '↖️鎧', '↗️帽子', '➡️煌めく装飾品', '↘️ブーツ', '↙️華麗な装飾品'];
+    const NON_WEAPON_TYPES = ITEM_TYPES.filter(type => !type.endsWith('武器'));
+    const STORAGE_KEY = 'apostle_equipment';
+
+    // 配列の先頭から優先的に検索します。別名は各配列に追加してください。
+    // 同じ装備の別名に包含関係がある場合、長い別名を先に置くと安全です。
+    // 異なる装備に共通する短い別名は避けてください。
+    const ITEM_ALIASES = {
+      '物理武器': ['物理武器', '物理', '剣', 'けん', 's'],
+      '魔法武器': ['魔法武器', '魔法', '杖', 'つえ', 'w'],
+      '鎧': ['鎧', 'よろい', '服', 'ふく', 'a'],
+      '帽子': ['帽子', 'ぼうし', '帽', 'ぼう', 'h'],
+      '煌めく装飾品': ['煌めく装飾品', '煌めく', 'きらめく', '指輪', 'ゆびわ', 'r'],
+      'ブーツ': ['ブーツ', '靴', 'くつ', 'b'],
+      '華麗な装飾品': ['華麗な装飾品', '華麗な', 'かれいな', '華麗', 'かれい', 'ネックレス', 'ねっくれす', '首飾り', '首', 'くびかざり', 'n'],
+    };
+
+    // トリッカルWiki「使徒一覧/未実装込み版」の絞り込み項目。
+    // [初期レアリティ, 性格, タイプ, 配置, 種族]
+    const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
+      ['Vivi', 3, '純粋', '守備', '前列', '竜族'], ['Erpin', 3, '純粋', '攻撃', '後列', '妖精'],
+      ['Gabia', 3, '純粋', '支援', '中列', '精霊'], ['Kyarot', 3, '純粋', '支援', '後列', '妖精'],
+      ['Sherum', 3, '純粋', '攻撃', '前列', '魔女'], ['Silphir', 3, '純粋', '攻撃', '中列', '竜族'],
+      ['Speaki', 3, '純粋', '攻撃', '後列', '幽霊'], ['Daya', 3, '純粋', '攻撃', '後列', '竜族'],
+      ['Naia', 3, '純粋', '支援', '中列', '精霊'], ['Haley', 3, '純粋', '攻撃', '中列', 'エルフ'],
+      ['Mago', 3, '純粋', '支援', '中列', '獣人'], ['Rohne', 3, '純粋', '守備', '前列', 'エルフ'],
+      ['Allet', 2, '純粋', '守備', '前列', 'エルフ'], ['Sari', 2, '純粋', '攻撃', '中列', '幽霊'],
+      ['BigWood', 2, '純粋', '守備', '前列', '精霊'], ['Kyuri', 1, '純粋', '支援', '中列', '妖精'],
+      ['Aya', 3, '冷静', '攻撃', '中列', '魔女'], ['Ed', 3, '冷静', '守備', '前列', 'エルフ'],
+      ['Amelia', 3, '冷静', '支援', '後列', 'エルフ'], ['Elena', 3, '冷静', '攻撃', '中列', 'エルフ'],
+      ['Sylla', 3, '冷静', '攻撃', '後列', '精霊'], ['Jade', 3, '冷静', '攻撃', '中列', '竜族'],
+      ['Barong', 3, '冷静', '攻撃', '前列', '幽霊'], ['Picora', 3, '冷静', '支援', '後列', '魔女'],
+      ['Fricle', 3, '冷静', '攻撃', '中列', '魔女'], ['Velvet', 3, '冷静', '守備', '前列', '魔女'],
+      ['Espi', 2, '冷静', '支援', '中列', '幽霊'], ['Meluna', 2, '冷静', '支援', '後列', '精霊'],
+      ['Layze', 2, '冷静', '攻撃', '後列', 'エルフ'], ['Patula', 1, '冷静', '攻撃', '前列', '妖精'],
+      ['Chloe', 3, '狂気', '守備', '前列', '妖精'], ['Renewa', 3, '狂気', '攻撃', '中列', 'エルフ'],
+      ['Alice', 3, '狂気', '攻撃', '中列', '幽霊'], ['Ifrit', 3, '狂気', '攻撃', '前列', '精霊'],
+      ['Shaydi', 3, '狂気', '攻撃', '前列', '幽霊'], ['Sist', 3, '狂気', '攻撃', '中列', '竜族'],
+      ['Diana', 3, '狂気', '支援', '中列', '獣人'], ['Ner', 3, '狂気', '支援', '前列', '妖精'],
+      ['Pira', 3, '狂気', '支援', '後列', '竜族'], ['Belita', 3, '狂気', '攻撃', '後列', '魔女'],
+      ['Mayo', 3, '狂気', '攻撃', '後列', '妖精'], ['Leets', 3, '狂気', '攻撃', '前列', '竜族'],
+      ['Rollett', 3, '狂気', '攻撃', '後列', '魔女'], ['MaestroMK2', 2, '狂気', '守備', '前列', 'エルフ'],
+      ['Yumimi', 2, '狂気', '攻撃', '後列', '獣人'], ['Maison', 1, '狂気', '攻撃', '後列', '幽霊'],
+      ['Ui', 3, '活発', '支援', '中列', '精霊'], ['Epica', 3, '活発', '攻撃', '中列', '獣人'],
+      ['Canna', 3, '活発', '攻撃', '後列', 'エルフ'], ['Shoupan', 3, '活発', '支援', '後列', '妖精'],
+      ['Selene', 3, '活発', '守備', '前列', '幽霊'], ['Tig', 3, '活発', '攻撃', '前列', '獣人'],
+      ['Butter', 3, '活発', '攻撃', '後列', '獣人'], ['Beni', 3, '活発', '攻撃', '前列', '獣人'],
+      ['Momo', 3, '活発', '攻撃', '後列', '獣人'], ['Rufo', 3, '活発', '攻撃', '中列', '獣人'],
+      ['Rudd', 3, '活発', '守備', '前列', '竜族'], ['Carren', 2, '活発', '支援', '後列', '妖精'],
+      ['Jubee', 2, '活発', '攻撃', '中列', '精霊'], ['Taida', 2, '活発', '攻撃', '後列', 'エルフ'],
+      ['Marie', 2, '活発', '攻撃', '中列', '妖精'], ['Mynx', 1, '活発', '攻撃', '前列', '獣人'],
+      ['xXionx', 3, '憂鬱', '攻撃', '後列', '幽霊'], ['Yomi', 3, '憂鬱', '支援', '中列', '???'],
+      ['Ashur', 3, '憂鬱', '攻撃', '後列', '妖精'], ['Kommy', 3, '憂鬱', '守備', '前列', '獣人'],
+      ['Snorky', 3, '憂鬱', '守備', '前列', '魔女'], ['Kidian', 3, '憂鬱', '攻撃', '前列', '竜族'],
+      ['Hilde', 3, '憂鬱', '支援', '中列', 'エルフ'], ['Blanchet', 3, '憂鬱', '攻撃', '中列', '精霊'],
+      ['Posher', 3, '憂鬱', '支援', '後列', '魔女'], ['Risty', 3, '憂鬱', '攻撃', '後列', 'エルフ'],
+      ['Rim', 3, '憂鬱', '攻撃', '前列', '幽霊'], ['Levi', 3, '憂鬱', '攻撃', '中列', '魔女'],
+      ['Chopi', 2, '憂鬱', '攻撃', '中列', '獣人'], ['Barie', 2, '憂鬱', '支援', '後列', '魔女'],
+      ['Festa', 2, '憂鬱', '支援', '前列', 'エルフ'], ['Veroo', 1, '憂鬱', '攻撃', '中列', '幽霊'],
+      ['Joanne', 3, '', '支援', '', '妖精'],
+    ].map(([englishName, initialRarity, personality, role, position, race]) =>
+      [englishName, { initialRarity, personality, role, position, race }]
+    ));
+
+    // 使徒データベース（トリッカルWiki「使徒一覧/未実装込み版」を2026-09-21に確認）。
+    // キーは trickcal-stat-state の apostles で使われるIDです。
+    const APOSTLE_DATABASE = {
+      source: 'https://wikiwiki.jp/thetrickal/%E4%BD%BF%E5%BE%92%E4%B8%80%E8%A6%A7/%E6%9C%AA%E5%AE%9F%E8%A3%85%E8%BE%BC%E3%81%BF%E7%89%88',
+      checkedAt: '2026-09-21',
+      apostles: Object.fromEntries([
+        ['Amelia', 'アメリア', '物理'], ['Aya', 'アヤ', '魔法'], ['Alice', 'アリス', '魔法'], ['Allet', 'アレット', '物理'],
+        ['ED', 'イード', '魔法', 'Ed'], ['Ifrit', 'イフリート', '魔法'], ['Ui', 'ウイ', '魔法'], ['Vivi', 'ヴィヴィ', '魔法'],
+        ['Ashur', 'エシュール', '魔法'], ['Espi', 'エスピー', '魔法'], ['Epica', 'エピカ', '物理'], ['Erpin', 'エルフィン', '魔法'],
+        ['Elena', 'エレナ', '物理'], ['Gabia', 'ガヴィア', '魔法'], ['Carren', 'カレン', '魔法'], ['Canna', 'カンナ', '物理'],
+        ['Kidian', 'ギデオン', '物理'], ['Kyarot', 'キャロット', '魔法'], ['Kyuri', 'キュウイ', '魔法'], ['Chloe', 'クロエ', '魔法'],
+        ['Kommy', 'コミー', '物理'], ['Sari', 'サリー', '物理'], ['Sylla', 'シーラ', '物理'], ['Shaydi', 'シェイディ', '物理'],
+        ['Jade', 'ジェイド', '魔法'], ['Xion', 'シオン・ザ・DB', '物理', 'xXionx'], ['Sist', 'シスト', '物理'], ['Shoupan', 'シュパン', '魔法'],
+        ['Jubee', 'ジュビー', '物理'], ['Silphir', 'シルフィール', '物理'], ['Snorky', 'スノキー', '物理'], ['Speaki', 'スピッキー', '魔法'],
+        ['Selene', 'セリーネ', '魔法'], ['Daya', 'ダーヤ', '魔法'], ['Taida', 'タイダー', '物理'], ['Chopi', 'チョッピー', '物理'],
+        ['Diana', 'ディアナ', '魔法'], ['Tig', 'ティグ', '物理'], ['Naia', 'ナイア', '魔法'], ['Ner', 'ネル', '魔法'],
+        ['Butter', 'バター', '物理'], ['Patula', 'パトラ', '物理'], ['Barong', 'バロン', '魔法'], ['Picora', 'ピコラ', '魔法'],
+        ['BigWood', 'ビッグウッド', '物理'], ['Hilde', 'ヒルデ', '魔法'], ['Festa', 'フェスタ', '物理'], ['Blanchet', 'ブランセ', '魔法'],
+        ['Fricle', 'フリックル', '魔法'], ['Haley', 'ヘイリー', '物理'], ['Beni', 'ベニー', '物理'], ['Belita', 'ベリータ', '魔法'],
+        ['Veroo', 'ベル', '物理'], ['Velvet', 'ベルベット', '物理'], ['Posher', 'ポーシャー', '魔法'], ['Mago', 'マーゴ', '魔法'],
+        ['MaestroMK2', 'マエストロMK2', '物理'], ['Mayo', 'マヨ', '物理'], ['Marie', 'マリー', '物理'], ['Mynx', 'ミンス', '物理'],
+        ['Maison', 'メゾン', '物理'], ['Meluna', 'メロナ', '魔法'], ['Momo', 'モモ', '魔法'], ['Yumimi', 'ユミミ', '物理'],
+        ['Yomi', 'ヨミ', '魔法'], ['Risty', 'リスティ', '物理'], ['Leets', 'リッツ', '物理'], ['Renewa', 'リニュア', '物理'],
+        ['Rim', 'リム', '物理'], ['Rudd', 'ルード', '物理'], ['Rufo', 'ルポ', '物理'], ['Layze', 'レイジー', '物理'],
+        ['Levi', 'レヴィ', '物理'], ['Rohne', 'ローネ', '物理'], ['Rollett', 'ロレット', '魔法'], ['Pira', 'ピラ', '物理'],
+        ['Sherum', 'シェルム', '魔法'], ['Barie', 'バリエ', '魔法'], ['Joanne', 'ジョアン', '物理'],
+      ].map(([id, nameJa, attackType, wikiEnglishName = id]) => [id, {
+        id, nameJa, attackType, wikiEnglishName, ...APOSTLE_PROFILE_BY_ENGLISH[wikiEnglishName],
+      }]))
+    };
+
+    function findApostle(value) {
+      const key = normalizeLine(String(value)).toLocaleLowerCase('ja');
+      return Object.values(APOSTLE_DATABASE.apostles).find(apostle =>
+        [apostle.id, apostle.wikiEnglishName, apostle.nameJa]
+          .some(name => normalizeLine(name).toLocaleLowerCase('ja') === key));
+    }
+
+    function normalizeLine(value) {
+      return value.normalize('NFKC')
+        .replace(/[ァ-ヶ]/gu, char => String.fromCodePoint(char.codePointAt(0) - 0x60))
+        .replace(/[\s\u3000]+/gu, ' ').trim().toLocaleLowerCase('ja');
+    }
+
+    function parseEquipmentText(text, aliases = ITEM_ALIASES, mode = 'replace') {
+      const records = [];
+      const warnings = [];
+      const seenNames = new Set();
+      text.split(/\r\n|[\n\r\u2028\u2029]/u).forEach((raw, index) => {
+        const line = normalizeLine(raw);
+        if (!line) return;
+        const lineNumber = index + 1;
+        const name = line.split(' ')[0];
+        // 指定どおり、使徒名を含む行全体の最初の数字を採用します。
+        const rankMatch = /[0-9]+/.exec(line);
+        const rank = rankMatch ? rankMatch[0] : '';
+        let rest = line.slice(name.length).trim();
+        if (!rankMatch) {
+          warnings.push(`${lineNumber}行目：ランクがありません。一覧で入力してください。`);
+        } else if (rankMatch.index < name.length) {
+          warnings.push(`${lineNumber}行目：使徒名内の数字「${rank}」をランクとして読み取りました。確認してください。`);
+        } else {
+          // 数字が装備の別名と誤一致しないよう、抽出した箇所だけを除去します。
+          const start = rankMatch.index - name.length;
+          const tail = line.slice(name.length);
+          rest = tail.slice(0, start) + ' ' + tail.slice(start + rank.length);
+        }
+        const equipment = Object.fromEntries(ITEM_TYPES.map(type => [type, false]));
+        for (const type of ITEM_TYPES) {
+          for (const rawAlias of aliases[type] || []) {
+            const alias = normalizeLine(rawAlias);
+            if (!alias) continue; // 空の別名で全員装着済みになるのを防止
+            const position = rest.indexOf(alias);
+            if (position === -1) continue;
+            equipment[type] = true;
+            rest = rest.slice(0, position) + ' ' + rest.slice(position + alias.length);
+            break; // その装備は確定。次の装備種へ。
+          }
+        }
+        const leftover = normalizeLine(rest);
+        if (leftover) warnings.push(`${lineNumber}行目：読み取れなかった文字「${leftover}」`);
+        if (seenNames.has(name)) warnings.push(`${lineNumber}行目：使徒名「${name}」が重複しています。最後の行を採用します。`);
+        seenNames.add(name);
+        const apostle = findApostle(name);
+        records.push({
+          name, rank, equipment, owned: true, lineNumber,
+          sourceId: apostle?.id, attackType: apostle?.attackType || ''
+        });
+      });
+      return { records, warnings };
+    }
+
+    // 添付形式: trickcal-stat-state / version 2 / kind slot。
+    const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+    // 最後に解析されたJSONの結果を一時保持します（ファイル選択→上書きボタンで反映）
+    let lastParsedJsonResult = null;
+    function parseEquipmentJson(text) {
+      let data;
+      try { data = JSON.parse(text.replace(/^\uFEFF/, '')); }
+      catch { throw new Error('JSONの構文が正しくありません。エクスポートしたファイル全体を読み込んでください。'); }
+      if (!isObject(data) || data.schema !== 'trickcal-stat-state' || data.version !== 2 || data.kind !== 'slot'
+        || !isObject(data.snapshot) || !isObject(data.snapshot.apostles)) {
+        throw new Error('対応形式は trickcal-stat-state、version 2、kind slot のJSONです。');
+      }
+      // 固定マッピング: JSON のステータス名 -> 内部の ITEM_TYPES 名
+      const mapping = {
+        '物理防御': '帽子',
+        '魔法防御': 'ブーツ',
+        '会心/会心DMG': '煌めく装飾品',
+        'HP': '鎧',
+        '会心抵抗/会心DMG抵抗': '華麗な装飾品',
+      };
+      const nonWeaponTypes = ITEM_TYPES.filter(type => !type.endsWith('武器'));
+      const types = Object.keys(mapping).map(k => mapping[k]);
+      if (types.some(type => !nonWeaponTypes.includes(type)) || new Set(types).size !== nonWeaponTypes.length) {
+        throw new Error('JSONの装備対応が不正です。');
+      }
+      const records = [], warnings = [];
+      let unknownIds = 0, equipmentOwned = 0;
+      for (const [id, state] of Object.entries(data.snapshot.apostles)) {
+        if (!isObject(state) || !Number.isSafeInteger(state.rank) || state.rank < 1 || !isObject(state.equipment)) {
+          throw new Error(`使徒「${id}」のランクまたは装備データが不正です。一覧は変更していません。`);
+        }
+        const databaseEntry = APOSTLE_DATABASE.apostles[id];
+        const attackStats = ['物理攻撃', '魔法攻撃'].filter(key => Object.hasOwn(state.equipment, key));
+        if (attackStats.length === 0) throw new Error(`使徒「${id}」の武器情報がありません。`);
+        const equippedAttackStats = attackStats.filter(key => state.equipment[key]?.enabled === true);
+        if (equippedAttackStats.length > 1) {
+          throw new Error(`使徒「${id}」に物理武器と魔法武器の両方が装備されています。登録を中止しました。`);
+        }
+        const observedAttackType = (equippedAttackStats[0] || (attackStats.length === 1 ? attackStats[0] : ''))
+          .replace('攻撃', '');
+        const attackType = databaseEntry?.attackType || observedAttackType;
+        const equipment = Object.fromEntries(ITEM_TYPES.map(type => [type, false]));
+        for (const [stat, item] of Object.entries(state.equipment)) {
+          if (!isObject(item) || typeof item.enabled !== 'boolean') {
+            throw new Error(`使徒「${id}」の「${stat}」の装着状態が不正です。`);
+          }
+          if (stat === '物理攻撃' || stat === '魔法攻撃') {
+            if (item.enabled) equipment[`${attackType || stat.replace('攻撃', '')}武器`] = true;
+          } else {
+            if (!Object.hasOwn(mapping, stat)) throw new Error(`使徒「${id}」に未対応の装備項目「${stat}」があります。`);
+            equipment[mapping[stat]] = item.enabled;
+          }
+        }
+        const required = ['HP', '物理防御', '魔法防御', '会心/会心DMG', '会心抵抗/会心DMG抵抗'];
+        if (required.some(key => !Object.hasOwn(state.equipment, key))
+          || !['物理攻撃', '魔法攻撃'].some(key => Object.hasOwn(state.equipment, key))) {
+          throw new Error(`使徒「${id}」の装備項目が不足しています。`);
+        }
+        const name = databaseEntry?.nameJa || id;
+        if (!databaseEntry) unknownIds++;
+        const owned = Object.hasOwn(state, 'equipment') && isObject(state.equipment);
+        if (owned) equipmentOwned++;
+        records.push({
+          name, rank: String(state.rank), equipment,
+          owned, sourceId: id, attackType
+        });
+      }
+      if (unknownIds) warnings.push(`${unknownIds}人は使徒データベースに未登録のためIDを表示しています。`);
+      if (equipmentOwned) warnings.push(`JSONに装備情報がある${equipmentOwned}人を所有として読み取りました。`);
+      warnings.push('武器は登録済み使徒ではデータベース、未登録使徒ではJSON内の装備状態から判定しました。その他の装備は「JSONの装備対応」の設定から判定しました。');
+      return { records, warnings };
+    }
+
+    // JSON の装備対応は内部で固定しているため、マッピングUIは不要になりました。
+    // `#json-mapping` は空のまま表示されます。
+    // 追加のスタイル対応: `.source-area` は `.json-tools` と同様の見た目でラップしています。
+    function showImportError(message = '') {
+      const box = document.getElementById('import-error'); box.textContent = message; box.hidden = !message;
+    }
+    let fileReadVersion = 0;
+    document.getElementById('json-file').addEventListener('change', async event => {
+      const file = event.target.files[0];
+      const version = ++fileReadVersion;
+      const formButtons = [...document.querySelectorAll('#import-form button[type=submit]')];
+      const jsonReplaceButton = document.getElementById('json-replace-button');
+      if (!file) {
+        formButtons.forEach(button => { button.disabled = false; });
+        lastParsedJsonResult = null; if (jsonReplaceButton) jsonReplaceButton.disabled = true;
+        document.getElementById('file-status').textContent = 'ファイル未選択です。入力欄と一覧は変更していません。';
+        return;
+      }
+      formButtons.forEach(button => { button.disabled = true; });
+      if (jsonReplaceButton) jsonReplaceButton.disabled = true;
+      showImportError();
+      document.getElementById('file-status').textContent = 'JSONファイルを読み込み中…';
+      try {
+        const text = await file.text();
+        if (version !== fileReadVersion) return;
+        // 解析して一時保持（入力欄にはコピーしない）
+        const result = parseEquipmentJson(text); // 検証が終わるまで入力欄・一覧を変更しない
+        lastParsedJsonResult = result;
+        if (jsonReplaceButton) jsonReplaceButton.disabled = false;
+        document.getElementById('file-status').textContent = `${file.name} を解析しました。上書きボタンで反映できます。`;
+      } catch (error) {
+        if (version !== fileReadVersion) return;
+        lastParsedJsonResult = null; if (jsonReplaceButton) jsonReplaceButton.disabled = true;
+        showImportError(error.message || 'ファイルを読み込めませんでした。');
+        document.getElementById('file-status').textContent = '読み込みに失敗しました。入力欄と一覧は変更していません。';
+      } finally {
+        if (version === fileReadVersion) formButtons.forEach(button => { button.disabled = false; });
+      }
+    });
+
+    // 登録済み使徒は常に全員表示し、利用者の状態だけを更新します。
+    const blankEquipment = () => Object.fromEntries(ITEM_TYPES.map(type => [type, false]));
+    const makeRegisteredRecords = () => Object.values(APOSTLE_DATABASE.apostles).map(apostle => ({
+      name: apostle.nameJa, rank: '', equipment: blankEquipment(), owned: false,
+      sourceId: apostle.id, attackType: apostle.attackType,
+      initialRarity: apostle.initialRarity, personality: apostle.personality, role: apostle.role,
+      position: apostle.position, race: apostle.race,
+    }));
+    let registeredRecords = makeRegisteredRecords();
+    let unknownRecords = [];
+    let parseWarnings = [];
+    const KANA_GROUPS = {
+      ア: 'アイウエオァィゥェォヴ', カ: 'カキクケコガギグゲゴ', サ: 'サシスセソザジズゼゾ',
+      タ: 'タチツテトダヂヅデド', ナ: 'ナニヌネノ', ハ: 'ハヒフヘホバビブベボパピプペポ',
+      マ: 'マミムメモ', ヤ: 'ヤユヨャュョ', ラ: 'ラリルレロ', ワ: 'ワヲン',
+    };
+    const FILTER_CATEGORIES = ['kana', 'rarity', 'personality', 'role', 'position', 'race', 'attackType'];
+    const activeFilters = Object.fromEntries(FILTER_CATEGORIES.map(category => [category, new Set()]));
+
+    function kanaGroupFor(name) {
+      const first = String(name || '').trim().charAt(0);
+      return Object.keys(KANA_GROUPS).find(group => KANA_GROUPS[group].includes(first)) || '';
+    }
+
+    function recordMatchesFilters(record) {
+      const apostle = APOSTLE_DATABASE.apostles[record.sourceId];
+      if (!apostle) return false;
+      const values = {
+        kana: kanaGroupFor(record.name), rarity: String(apostle.initialRarity),
+        personality: apostle.personality, role: apostle.role, position: apostle.position,
+        race: apostle.race, attackType: apostle.attackType,
+      };
+      return FILTER_CATEGORIES.every(category =>
+        activeFilters[category].size === 0 || activeFilters[category].has(values[category]));
+    }
+
+    function updateFilterButtons() {
+      document.querySelectorAll('[data-filter-category]').forEach(button => {
+        const selected = activeFilters[button.dataset.filterCategory].has(button.dataset.filterValue);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+
+    document.querySelectorAll('[data-filter-category]').forEach(button => {
+      button.addEventListener('click', () => {
+        const selected = activeFilters[button.dataset.filterCategory];
+        const value = button.dataset.filterValue;
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        updateFilterButtons();
+        renderRecords();
+      });
+    });
+
+    function confirmAction(message) {
+      return document.getElementById('skip-confirm').checked || window.confirm(message);
+    }
+
+    function hasCurrentData() {
+      return unknownRecords.length > 0 || registeredRecords.some(record => record.owned || record.rank
+        || Object.values(record.equipment).some(Boolean));
+    }
+
+    function findRegisteredTarget(record) {
+      const apostle = record.sourceId && APOSTLE_DATABASE.apostles[record.sourceId]
+        ? APOSTLE_DATABASE.apostles[record.sourceId] : findApostle(record.name);
+      return apostle ? registeredRecords.find(item => item.sourceId === apostle.id) : undefined;
+    }
+
+    function normalizeIncomingRecords(incoming) {
+      for (const record of incoming) {
+        const hasPhysicalWeapon = Boolean(record.equipment['物理武器']);
+        const hasMagicWeapon = Boolean(record.equipment['魔法武器']);
+        if (hasPhysicalWeapon && hasMagicWeapon) {
+          throw new Error(`使徒「${record.name}」に物理武器と魔法武器の両方が指定されています。登録を中止しました。`);
+        }
+        const apostle = (record.sourceId && APOSTLE_DATABASE.apostles[record.sourceId]) || findApostle(record.name);
+        if (apostle) {
+          record.sourceId = apostle.id;
+          record.attackType = apostle.attackType;
+        } else if (hasPhysicalWeapon || hasMagicWeapon) {
+          record.attackType = hasPhysicalWeapon ? '物理' : '魔法';
+        }
+        const hasWeapon = hasPhysicalWeapon || hasMagicWeapon;
+        record.equipment['物理武器'] = hasWeapon && record.attackType === '物理';
+        record.equipment['魔法武器'] = hasWeapon && record.attackType === '魔法';
+      }
+    }
+
+    function applyIncomingRecords(incoming, mode) {
+      if (mode === 'replace') {
+        registeredRecords = makeRegisteredRecords();
+        unknownRecords = [];
+      }
+      for (const record of incoming) {
+        const target = findRegisteredTarget(record);
+        if (target) {
+          target.rank = record.rank;
+          target.equipment = { ...blankEquipment(), ...record.equipment };
+          target.owned = Boolean(record.owned);
+          continue;
+        }
+        const key = record.sourceId || normalizeLine(record.name);
+        const index = unknownRecords.findIndex(item => (item.sourceId || normalizeLine(item.name)) === key);
+        const normalized = { ...record, owned: Boolean(record.owned), equipment: { ...blankEquipment(), ...record.equipment } };
+        if (index === -1) unknownRecords.push(normalized);
+        else unknownRecords[index] = normalized;
+      }
+    }
+
+    function deleteUnknownRecord(record) {
+      if (!confirmAction(`未登録使徒「${record.name || '名前未入力'}」を削除します。元に戻せません。よろしいですか？`)) return;
+      unknownRecords = unknownRecords.filter(item => item !== record);
+      saveState();
+      renderRecords();
+    }
+
+    const source = document.getElementById('source');
+    const registeredBody = document.getElementById('table-body');
+    const unknownBody = document.getElementById('unknown-body');
+
+    function sanitizedEquipment(value) {
+      return Object.fromEntries(ITEM_TYPES.map(type => [type, Boolean(isObject(value) && value[type])]));
+    }
+
+    function saveState() {
+      const status = document.getElementById('save-status');
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          schema: STORAGE_KEY,
+          version: 1,
+          savedAt: new Date().toISOString(),
+          sourceText: source.value,
+          registered: registeredRecords,
+          unknown: unknownRecords,
+        }));
+        status.textContent = '自動保存済みです。';
+      } catch {
+        status.textContent = '自動保存できませんでした。ブラウザーの保存設定を確認してください。';
+      }
+    }
+
+    function restoreState() {
+      const status = document.getElementById('save-status');
+      let raw;
+      try { raw = localStorage.getItem(STORAGE_KEY); }
+      catch {
+        status.textContent = '保存データを読み込めませんでした。ブラウザーの保存設定を確認してください。';
+        return;
+      }
+      if (!raw) return;
+      try {
+        const saved = JSON.parse(raw);
+        if (!isObject(saved) || saved.schema !== STORAGE_KEY || saved.version !== 1
+          || !Array.isArray(saved.registered) || !Array.isArray(saved.unknown)) {
+          throw new Error('unsupported saved data');
+        }
+        const registeredById = new Map(saved.registered
+          .filter(record => isObject(record) && typeof record.sourceId === 'string')
+          .map(record => [record.sourceId, record]));
+        for (const record of registeredRecords) {
+          const savedRecord = registeredById.get(record.sourceId);
+          if (!savedRecord) continue;
+          record.owned = savedRecord.owned === true;
+          record.rank = typeof savedRecord.rank === 'string' || typeof savedRecord.rank === 'number'
+            ? String(savedRecord.rank) : '';
+          record.equipment = sanitizedEquipment(savedRecord.equipment);
+          const hasWeapon = record.equipment['物理武器'] || record.equipment['魔法武器'];
+          record.equipment['物理武器'] = hasWeapon && record.attackType === '物理';
+          record.equipment['魔法武器'] = hasWeapon && record.attackType === '魔法';
+        }
+        unknownRecords = saved.unknown.filter(record => isObject(record) && typeof record.name === 'string')
+          .map(record => {
+            const equipment = sanitizedEquipment(record.equipment);
+            if (equipment['物理武器'] && equipment['魔法武器']) throw new Error('conflicting weapon data');
+            const attackType = record.attackType === '物理' || record.attackType === '魔法'
+              ? record.attackType : (equipment['物理武器'] ? '物理' : equipment['魔法武器'] ? '魔法' : '');
+            return {
+              name: record.name,
+              rank: typeof record.rank === 'string' || typeof record.rank === 'number' ? String(record.rank) : '',
+              owned: record.owned === true,
+              equipment,
+              attackType,
+              ...(typeof record.sourceId === 'string' ? { sourceId: record.sourceId } : {}),
+            };
+          });
+        source.value = typeof saved.sourceText === 'string' ? saved.sourceText : '';
+        status.textContent = '保存データを復元しました。変更内容は引き続き自動保存されます。';
+      } catch {
+        status.textContent = '保存データの形式が正しくないため読み込めませんでした。現在の一覧は変更していません。';
+        registeredRecords = makeRegisteredRecords();
+        unknownRecords = [];
+      }
+    }
+
+    source.addEventListener('input', saveState);
+    document.getElementById('clear-source').addEventListener('click', () => {
+      const fileInput = document.getElementById('json-file');
+      if (!source.value && !fileInput.files.length) return;
+      if (!confirmAction('入力欄と選択中のJSONファイルをクリアします。よろしいですか？')) return;
+      source.value = '';
+      fileInput.value = '';
+      lastParsedJsonResult = null;
+      const jsonReplaceButton = document.getElementById('json-replace-button'); if (jsonReplaceButton) jsonReplaceButton.disabled = true;
+      fileReadVersion++;
+      document.querySelectorAll('#import-form button[type=submit]').forEach(button => { button.disabled = false; });
+      document.getElementById('file-status').textContent = '入力欄をクリアしました。一覧のデータは変更していません。';
+      showImportError();
+      saveState();
+    });
+
+    // ファイルで解析したJSONを使って上書きするボタン
+    document.getElementById('json-replace-button').addEventListener('click', () => {
+      if (!lastParsedJsonResult) { showImportError('JSONが選択されていないか解析に失敗しています。'); return; }
+      if (!confirmAction(`選択されたJSONの${lastParsedJsonResult.records.length}件で現在のデータを上書きします。元に戻せません。よろしいですか？`)) return;
+      try {
+        normalizeIncomingRecords(lastParsedJsonResult.records);
+      } catch (e) { showImportError(e.message); return; }
+      applyIncomingRecords(lastParsedJsonResult.records, 'replace');
+      parseWarnings = lastParsedJsonResult.warnings || [];
+      saveState();
+      renderRecords();
+      const warningBox = document.getElementById('warnings');
+      warningBox.replaceChildren();
+      warningBox.hidden = parseWarnings.length === 0;
+      if (parseWarnings.length) {
+        const title = document.createElement('p'); title.textContent = '読み取り時の注意（JSONからの結果）';
+        const list = document.createElement('ul');
+        for (const warning of parseWarnings) { const li = document.createElement('li'); li.textContent = warning; list.append(li); }
+        warningBox.append(title, list);
+      }
+      // 使用後は一時データを残しておくが、UI上はクリアしておく
+      lastParsedJsonResult = null; document.getElementById('json-file').value = ''; document.getElementById('json-replace-button').disabled = true;
+      document.getElementById('file-status').textContent = 'JSONの内容で上書きしました。';
+    });
+    function buildHead(element, includeDelete) {
+      const row = document.createElement('tr');
+      for (const title of ['所有', '使徒名', 'ランク', '攻撃種別', ...DISPLAY_ITEM_LABELS, ...(includeDelete ? ['削除'] : [])]) {
+        const th = document.createElement('th');
+        th.scope = 'col'; th.textContent = title; row.append(th);
+      }
+      element.append(row);
+    }
+    // Minimal CSS injection for `.json-tools` / `.file-area` visual parity
+    (function injectStyles() {
+      const css = `
+      .json-tools, .source-area { border: 1px solid #bcd; background: #f6fbff; padding: var(--fa-pt,12px) var(--fa-pl,12px) var(--fa-pb,12px); border-radius:6px; margin-bottom:12px; }
+      .json-tools label strong, .source-area label strong { font-weight:700; }
+      .file-area { padding:8px 0; }
+      .file-controls { display:flex; gap:8px; align-items:center; margin-top:8px; }
+      `;
+      const style = document.createElement('style'); style.textContent = css; document.head.append(style);
+    })();
+    buildHead(document.getElementById('table-head'), false);
+    buildHead(document.getElementById('unknown-head'), true);
+
+    function addCheckboxCell(tr, checked, label, onChange) {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'checkbox'; input.checked = checked;
+      input.setAttribute('aria-label', label);
+      input.addEventListener('change', () => onChange(input.checked));
+      td.append(input); tr.append(td);
+    }
+
+    function addRankCell(tr, record, label) {
+      const td = document.createElement('td');
+      const input = document.createElement('input');
+      input.type = 'text'; input.inputMode = 'numeric'; input.value = record.rank;
+      input.disabled = !record.owned;
+      input.setAttribute('aria-label', label);
+      input.addEventListener('input', () => { record.rank = input.value; saveState(); });
+      td.append(input); tr.append(td);
+    }
+
+    function addAttackCell(tr, attackType) {
+      const td = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = 'attack-type'; badge.textContent = attackType || '未登録';
+      badge.dataset.type = attackType || '';
+      td.append(badge); tr.append(td);
+    }
+
+    function addUnknownAttackCell(tr, record) {
+      const td = document.createElement('td');
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', `${record.name || '未登録使徒'}の攻撃種別`);
+      for (const [value, label] of [['', '未選択'], ['物理', '物理'], ['魔法', '魔法']]) {
+        const option = document.createElement('option'); option.value = value; option.textContent = label;
+        select.append(option);
+      }
+      select.value = record.attackType || '';
+      td.append(select); tr.append(td);
+      return select;
+    }
+
+    function addEquipmentCells(tr, record, rowLabel, attackSelect = null) {
+      for (let i = 0; i < DISPLAY_ITEM_LABELS.length; i++) {
+        const display = DISPLAY_ITEM_LABELS[i];
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        if (i === 0) {
+          // 武器列（表示は1列だが内部的には物理/魔法の2キーを扱う）
+          input.checked = Boolean(record.equipment['物理武器'] || record.equipment['魔法武器']);
+          input.disabled = !record.owned || !['物理', '魔法'].includes(record.attackType);
+          const updateWeapon = checked => {
+            record.equipment['物理武器'] = checked && record.attackType === '物理';
+            record.equipment['魔法武器'] = checked && record.attackType === '魔法';
+            saveState();
+          };
+          input.addEventListener('change', () => updateWeapon(input.checked));
+          if (attackSelect) attackSelect.addEventListener('change', () => {
+            const wasChecked = input.checked;
+            record.attackType = attackSelect.value;
+            input.disabled = !record.owned || !record.attackType;
+            input.checked = wasChecked && Boolean(record.attackType);
+            updateWeapon(input.checked);
+          });
+        } else {
+          // 非武器列は ITEM_TYPES の該当キーを使う
+          const key = NON_WEAPON_TYPES[i - 1];
+          input.checked = Boolean(record.equipment[key]);
+          input.disabled = !record.owned;
+          input.addEventListener('change', () => { record.equipment[key] = input.checked; saveState(); });
+        }
+        input.setAttribute('aria-label', `${rowLabel}の${display}`);
+        td.append(input);
+        tr.append(td);
+      }
+    }
+
+    function renderRegisteredRow(record, rowIndex) {
+      const tr = document.createElement('tr');
+      tr.className = record.owned ? '' : 'not-owned';
+      const label = `${rowIndex + 1}人目の${record.name}`;
+      addCheckboxCell(tr, record.owned, `${label}を所有`, checked => { record.owned = checked; saveState(); renderRecords(); });
+      const nameCell = document.createElement('td'); nameCell.textContent = record.name; tr.append(nameCell);
+      addRankCell(tr, record, `${label}の装備ランク`);
+      addAttackCell(tr, record.attackType);
+      addEquipmentCells(tr, record, label);
+      registeredBody.append(tr);
+    }
+
+    function renderUnknownRow(record, rowIndex) {
+      const tr = document.createElement('tr');
+      tr.className = record.owned ? '' : 'not-owned';
+      const label = `${rowIndex + 1}人目の未登録使徒`;
+      addCheckboxCell(tr, record.owned, `${label}を所有`, checked => { record.owned = checked; saveState(); renderRecords(); });
+      const nameCell = document.createElement('td');
+      const nameInput = document.createElement('input');
+      nameInput.type = 'text'; nameInput.value = record.name;
+      nameInput.setAttribute('aria-label', `${label}の名前`);
+      nameInput.addEventListener('input', () => { record.name = nameInput.value; saveState(); });
+      nameCell.append(nameInput); tr.append(nameCell);
+      addRankCell(tr, record, `${label}の装備ランク`);
+      const attackSelect = addUnknownAttackCell(tr, record);
+      addEquipmentCells(tr, record, label, attackSelect);
+      const deleteCell = document.createElement('td');
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button'; deleteButton.className = 'delete-button'; deleteButton.title = 'この行を削除';
+      deleteButton.setAttribute('aria-label', `${label}の行を削除`);
+      deleteButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg>';
+      deleteButton.addEventListener('click', () => deleteUnknownRecord(record));
+      deleteCell.append(deleteButton); tr.append(deleteCell);
+      unknownBody.append(tr);
+    }
+
+    function renderStatus() {
+      const owned = registeredRecords.filter(record => record.owned).length;
+      const visible = registeredRecords.filter(recordMatchesFilters).length;
+      document.getElementById('status').textContent = `${visible}/${registeredRecords.length}人を表示 / ${owned}人を所有 / 注意 ${parseWarnings.length}件`;
+      document.getElementById('unknown-status').textContent = `${unknownRecords.length}人`;
+    }
+
+    function renderRecords() {
+      registeredBody.replaceChildren(); unknownBody.replaceChildren();
+      registeredRecords.filter(recordMatchesFilters).forEach(renderRegisteredRow);
+      unknownRecords.forEach(renderUnknownRow);
+      document.getElementById('unknown-section').hidden = unknownRecords.length === 0;
+      renderStatus();
+    }
+
+    document.getElementById('import-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const mode = event.submitter?.value;
+      if (mode !== 'replace' && mode !== 'append') return;
+      showImportError();
+      let result;
+      try {
+        const text = source.value.trim();
+        const isJson = /^[{\[]/.test(text);
+        result = isJson ? parseEquipmentJson(text) : parseEquipmentText(source.value, ITEM_ALIASES, mode);
+        normalizeIncomingRecords(result.records);
+      } catch (error) {
+        showImportError(error.message); return;
+      }
+      if (mode === 'append' && result.records.length === 0) return;
+      if (hasCurrentData()) {
+        const message = mode === 'replace'
+          ? `現在の所有・ランク・装備データをすべて消去し、入力した${result.records.length}人分のデータで置き換えます。元に戻せません。よろしいですか？`
+          : '現在の一覧にデータを追加します。同名の使徒は所有・ランク・装備をすべて上書きします。よろしいですか？';
+        if (!confirmAction(message)) return;
+      }
+      applyIncomingRecords(result.records, mode);
+      parseWarnings = result.warnings;
+      saveState();
+      renderRecords();
+      const warningBox = document.getElementById('warnings');
+      warningBox.replaceChildren();
+      warningBox.hidden = result.warnings.length === 0;
+      if (result.warnings.length) {
+        const title = document.createElement('p'); title.textContent = '読み取り時の注意（修正前の入力に対する結果）';
+        const list = document.createElement('ul');
+        for (const warning of result.warnings) {
+          const li = document.createElement('li'); li.textContent = warning; list.append(li);
+        }
+        warningBox.append(title, list);
+      }
+    });
+    restoreState();
+    renderRecords();
+  </script>
+  <style>
+    /* Reduce button heights for filter and action buttons */
+    .filter-button,
+    .actions button,
+    button.replace-button,
+    button.clear-source-button {
+      padding: 4px 8px;
+      /* smaller vertical padding */
+      line-height: 1;
+      /* tighter line height */
+      font-size: 0.95rem;
+    }
+
+    /* Ensure buttons remain accessible on small screens */
+    @media (max-width: 420px) {
+
+      .filter-button,
+      .actions button {
+        padding: 3px 6px;
+      }
+    }
+
+    /* Reduce rank display/input height in registered (02) and unknown (03) lists */
+    /* Targets text nodes and inputs rendered in table cells */
+    #table-body td.rank,
+    #unknown-body td.rank {
+      padding: 2px 6px;
+      font-size: 0.9rem;
+      line-height: 1;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    /* Specific rank inputs in the registered/unknown tables (override other rules) */
+    #table-body td input[type="text"],
+    #table-body td input[type="number"],
+    #unknown-body td input[type="text"],
+    #unknown-body td input[type="number"] {
+      padding: 1px 3px;
+      /* give some vertical height */
+      box-sizing: border-box;
+      height: auto;
+      line-height: 1;
+      font-size: 1.25rem;
+      text-align: center;
+      /* center the rank input value */
+      min-width: 40px;
+      max-width: 50px;
+    }
+
+    /* Do NOT center the main source input textarea - it MUST be left-aligned */
+    #source {
+      text-align: left;
+    }
+  </style>
+</body>
+
+</html>

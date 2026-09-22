@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>装備取得効率計算ツール</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', 'Meiryo', sans-serif;
+      background: #12121e;
+      color: #dde;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    h1 {
+      color: #ffd700;
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 18px;
+      letter-spacing: 0.05em;
+    }
+    h2 {
+      color: #89c4f4;
+      font-size: 1rem;
+      border-bottom: 1px solid #334;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a4e;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+
+    /* Layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 14px;
+      align-items: start;
+    }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* Target inputs */
+    .tgt-input {
+      width: 58px;
+      background: #0e1030;
+      border: 1px solid #445;
+      color: #dde;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      text-align: right;
+    }
+    .tgt-input:focus { outline: none; border-color: #89c4f4; }
+    #targetsGrid th { padding: 5px 8px; font-size: 0.8rem; }
+    #targetsGrid td { padding: 3px 8px; }
+    #targetsGrid td:first-child { font-weight: normal; color: #dde; text-align: left; }
+
+    /* Rank ON/OFF toggle buttons */
+    .rank-toggle {
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .rank-toggle.on {
+      background: #1a4b2a;
+      border: 1px solid #40a060;
+      color: #aaffaa;
+    }
+    .rank-toggle.off {
+      background: #1a1a2e;
+      border: 1px solid #334;
+      color: #667;
+    }
+
+    /* Tables */
+    .tbl-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
+    th {
+      background: #0e1030;
+      padding: 7px 10px;
+      text-align: center;
+      color: #89c4f4;
+      white-space: nowrap;
+    }
+    td {
+      padding: 5px 10px;
+      border-bottom: 1px solid #1e1e3e;
+      text-align: center;
+      white-space: nowrap;
+    }
+    tr:hover td { background: #1e1e3e; }
+    td:first-child { text-align: left; font-weight: bold; color: #ccc; }
+    th:first-child { text-align: left; }
+
+    /* Rank badges */
+    .r9 { color: #ffd700; font-weight: bold; }
+    .r8 { color: #89c4f4; }
+    .r-dash { color: #444; }
+
+    /* Analysis badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+    .badge-unavoidable { background: #6b1a1a; color: #ffaaaa; border: 1px solid #c04040; }
+    .badge-avoidable   { background: #1a4b2a; color: #aaffaa; border: 1px solid #40a060; }
+
+    /* Stage list abbreviations */
+    .stages-list { font-size: 0.82rem; color: #bbb; }
+
+    /* Section placeholder */
+    .placeholder { color: #556; font-size: 0.9rem; padding: 8px 0; }
+
+    /* Calculate button (disabled for now) */
+    .calc-btn {
+      display: block;
+      margin: 0 auto;
+      padding: 10px 32px;
+      background: #2a3a6a;
+      border: 1px solid #4a6aaa;
+      color: #89c4f4;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .calc-btn:hover { background: #3a4a8a; }
+    .calc-btn:disabled {
+      background: #1a1a2e;
+      border-color: #334;
+      color: #556;
+      cursor: not-allowed;
+    }
+    /* Result display */
+    .result-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      background: #0e1030;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+    .result-summary .kv { display: flex; flex-direction: column; gap: 2px; }
+    .result-summary .kv span:first-child { color: #89c4f4; font-size: 0.78rem; }
+    .result-summary .kv span:last-child  { color: #ffd700; font-weight: bold; font-size: 1.1rem; }
+    h3.result-h {
+      color: #89c4f4; font-size: 0.88rem; font-weight: normal;
+      border-left: 3px solid #89c4f4; padding-left: 8px;
+      margin: 14px 0 8px;
+    }
+    .calc-status { color: #89c4f4; font-size: 0.9rem; padding: 8px 0; }
+    .penalty-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+    }
+    .penalty-row label { color: #aab; flex: 1; }
+    .penalty-row input {
+      width: 72px;
+      background: #0e1030;
+      border: 1px solid #445;
+      color: #dde;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      text-align: right;
+    }
+    .penalty-row input:focus { outline: none; border-color: #89c4f4; }
+    .over  { color: #ffcc88; }
+    .under { color: #88ccff; }
+    .exact { color: #88ff88; }
+    .infeasible-warning {
+      color: #ffaaaa;
+      background: #2a1a1a;
+      border: 1px solid #c04040;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+      font-size: 0.9rem;
+    }
+
+    /* Accordion */
+    .accordion-summary {
+      cursor: pointer;
+      color: #89c4f4;
+      font-size: 1rem;
+      list-style: none;
+    }
+    .accordion-summary::-webkit-details-marker { display: none; }
+    .accordion-summary::before { content: '▶ '; }
+    details[open] .accordion-summary::before { content: '▼ '; }
+
+    /* Shared Trickcal equipment-tool theme */
+    :root {
+      color: #182b3e;
+      background: #f3f6fa;
+      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      accent-color: #1768ce;
+    }
+    body { background: #f3f6fa; color: #182b3e; padding: 0; }
+    header {
+      background: #16324e;
+      color: white;
+      border-bottom: 4px solid #63cddd;
+      padding: 25px max(24px, calc((100vw - 1200px) / 2));
+    }
+    header p { margin: 0; color: #a5d9e9; font-size: .875rem; letter-spacing: .12em; }
+    header h1 { color: white; text-align: left; font-size: 1.6rem; margin: 3px 0; letter-spacing: 0; }
+    main { max-width: 1248px; margin: auto; padding: 28px 24px 60px; }
+    .card {
+      background: white;
+      border: 1px solid #d8e1eb;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    h2 { color: #182b3e; font-size: 1.15rem; border: 0; padding: 0; margin: 0 0 14px; }
+    .card > h2::before {
+      content: attr(data-step);
+      display: inline-block;
+      margin-right: 12px;
+      padding: 3px 9px;
+      border-radius: 5px;
+      background: #e5effb;
+      color: #185aa8;
+      font-size: .8rem;
+      vertical-align: 1px;
+    }
+    .card > h2[data-step=""]::before { display: none; }
+    p[style], label[style], span[style] { color: #506276 !important; }
+    input[type=number], .tgt-input, .penalty-row input {
+      background: white;
+      border: 1px solid #aebfd1;
+      color: #182b3e;
+      border-radius: 6px;
+      padding: 6px 8px;
+    }
+    #targetsGrid .tgt-input { width: 84px; }
+    input:focus-visible, button:focus-visible { outline: 3px solid #84c3ff; outline-offset: 2px; }
+    button, .calc-btn {
+      font: inherit;
+      font-weight: 600;
+      background: #1768ce !important;
+      border: 0 !important;
+      border-radius: 7px !important;
+      color: white !important;
+      cursor: pointer;
+    }
+    button:hover, .calc-btn:hover { background: #1256ad !important; }
+    .calc-btn:disabled { background: #9ba9b6 !important; color: white !important; cursor: not-allowed; }
+    .rank-toggle.on, .rank-toggle.off, .filter-button {
+      background: #f0f5fa !important;
+      color: #496078 !important;
+      border: 1px solid #c6d5e3 !important;
+    }
+    .rank-toggle.on { background: #1768ce !important; color: white !important; border-color: #1768ce !important; }
+    .result-summary { background: #f0f5fa; border: 1px solid #d8e1eb; }
+    .result-summary .kv span:first-child, h3.result-h, .calc-status { color: #496078; }
+    .result-summary .kv span:last-child { color: #1768ce; }
+    h3.result-h { border-left-color: #1768ce; }
+    .infeasible-warning { background: #fff8e9; color: #7a5516; border-color: #d99623; }
+    .tbl-wrap { overflow-x: auto; }
+    table { font-size: .875rem; }
+    th { background: #f0f5fa; color: #496078; padding: 10px 8px; border-bottom: 1px solid #c6d5e3; }
+    td { padding: 8px; border-bottom: 1px solid #e0e8f0; color: #182b3e; }
+    td:first-child, #targetsGrid td:first-child { color: #182b3e; }
+    tr:hover td { background: #f8fbff; }
+    .r9 { color: #185aa8; }
+    .r8 { color: #496078; }
+    .r-dash, .placeholder { color: #9ba9b6; }
+    .accordion-summary { color: #182b3e; font-weight: 600; }
+    .tool-nav {
+      background: #fff;
+      border-bottom: 1px solid #d8e1eb;
+      box-shadow: 0 2px 8px rgb(22 50 78 / 8%);
+    }
+    .tool-nav-inner {
+      max-width: 1248px;
+      margin: auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: stretch;
+      overflow-x: auto;
+    }
+    .tool-nav-brand {
+      flex: 0 0 auto;
+      align-self: center;
+      margin-right: 18px;
+      color: #16324e;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+    .tool-nav a {
+      flex: 0 0 auto;
+      padding: 12px 14px 10px;
+      border-bottom: 3px solid transparent;
+      color: #506276;
+      font-size: .9rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .tool-nav a:hover { background: #f3f8fd; color: #1768ce; }
+    .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff; }
+    .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px; }
+    @media (max-width: 700px) {
+      main { padding: 18px 12px; }
+      header { padding: 18px 16px; }
+      .card { padding: 18px 14px; }
+      .tool-nav-inner { padding: 0 12px; }
+      .tool-nav-brand { margin-right: 8px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver/prod/solver.min.js"></script>
+</head>
+<body>
+<header>
+  <p>TRICKCAL / EQUIPMENT PLANNER</p>
+  <h1>装備取得効率計算</h1>
+</header>
+<nav class="tool-nav" aria-label="ツール間の移動">
+  <div class="tool-nav-inner">
+    <span class="tool-nav-brand">TRICKCAL TOOLS</span>
+    <a href="apostle_equipment.html">装備管理</a>
+    <a href="equipment_calc.html">必要量計算</a>
+    <a href="equipment_planner.html" aria-current="page">周回計画</a>
+  </div>
+</nav>
+<main>
+
+<!-- Target counts -->
+<div class="card">
+  <h2 data-step="01">必要個数入力</h2>
+  <p style="font-size:0.8rem;color:#889;margin-bottom:8px">※ OFFにしたランクの必要量は0として計算されます。</p>
+  <div id="targetsGrid"></div>
+</div>
+
+<!-- Calculate -->
+<div class="card">
+  <h2 data-step="02">最適化計算</h2>
+  <p style="font-size:0.85rem;color:#889;margin-bottom:10px">左の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
+  <div id="calcModeGrid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
+      <input type="radio" name="calcMode" value="1" checked onchange="onCalcModeChange()" style="margin-top:3px">
+      <span><b style="color:#89c4f4">最小周回数モード</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
+    </label>
+    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
+      <input type="radio" name="calcMode" value="2" onchange="onCalcModeChange()" style="margin-top:3px">
+      <span><b style="color:#89c4f4">過不足ゼロモード</b> — 余りを一切許容せず、要求数にできるだけ近づく周回数を計算します。要求数に届かない場合はその内容を表示します。</span>
+    </label>
+    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
+      <input type="radio" name="calcMode" value="3" onchange="onCalcModeChange()" style="margin-top:3px">
+      <span><b style="color:#89c4f4">ペナルティ調整モード</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
+    </label>
+  </div>
+  <div id="rankScoreGrid" style="margin-bottom:12px"></div>
+  <button class="calc-btn" id="calcBtn" disabled onclick="runCalc()">計算実行</button>
+  <div id="calcResult" style="margin-top:14px"></div>
+</div>
+
+<!-- Stage list (accordion) -->
+<div class="card">
+  <details>
+    <summary class="accordion-summary">ステージ一覧</summary>
+    <div id="stageTableWrap" class="tbl-wrap" style="margin-top:12px">
+      <p class="placeholder">データを読み込むと表示されます</p>
+    </div>
+  </details>
+</div>
+
+<!-- Distribution table (accordion) -->
+<div class="card">
+  <details>
+    <summary class="accordion-summary">アイテム分布（ステージ × 装備種類）</summary>
+    <div id="distTableWrap" class="tbl-wrap" style="margin-top:12px">
+      <p class="placeholder">データを読み込むと表示されます</p>
+    </div>
+  </details>
+</div>
+
+<script>
+// ─── 固定データ ───────────────────────────────────────────
+const ITEM_TYPES = ['物理武器', '魔法武器', '鎧', '帽子', '煌めく装飾品', 'ブーツ', '華麗な装飾品'];
+const EMOJI_TYPES = ['⚔️', '🪄', '👕', '🎩', '💍', '👢', '📿'];
+const DEFAULT_MIN8    = [60, 40, 100, 100, 100, 100, 100];
+const DEFAULT_TARGETS = DEFAULT_MIN8.map(v => Math.round(v * 2.6));
+
+// ─── 埋め込みデータ (equipment.txt) ─────────────────────
+const EQUIPMENT_RAW = `\
+32-10	94_ブーツ9	97_魔法武器9
+32-9	92_帽子9	96_物理武器9
+32-8	94_ブーツ9	91_鎧9
+32-7	97_魔法武器9	92_帽子9
+32-6	96_物理武器9	91_鎧9
+32-5	93_煌めく装飾品9	95_華麗な装飾品9
+32-4	94_ブーツ9	95_華麗な装飾品9
+32-3	92_帽子9	96_物理武器9
+32-2	91_鎧9	93_煌めく装飾品9
+32-1	95_華麗な装飾品9	97_魔法武器9
+31-10	96_物理武器9	94_ブーツ9
+31-9	93_煌めく装飾品9	92_帽子9
+31-8	97_魔法武器9	91_鎧9
+31-7	94_ブーツ9	93_煌めく装飾品9
+31-6	92_帽子9	95_華麗な装飾品9
+31-5	91_鎧9	97_魔法武器9
+31-4	93_煌めく装飾品9	96_物理武器9
+31-3	95_華麗な装飾品9	94_ブーツ9
+31-2	97_魔法武器9	92_帽子9
+31-1	96_物理武器9	91_鎧9
+30-10	83_煌めく装飾品8	94_ブーツ9
+30-9	84_ブーツ8	92_帽子9
+30-8	87_魔法武器8	91_鎧9
+30-7	85_華麗な装飾品8	97_魔法武器9
+30-6	83_煌めく装飾品8	95_華麗な装飾品9
+30-5	86_物理武器8	96_物理武器9
+30-4	84_ブーツ8	93_煌めく装飾品9
+30-3	82_帽子8	94_ブーツ9
+30-2	81_鎧8	92_帽子9
+30-1	87_魔法武器8	97_魔法武器9
+29-10	85_華麗な装飾品8	96_物理武器9
+29-9	83_煌めく装飾品8	95_華麗な装飾品9
+29-8	86_物理武器8	93_煌めく装飾品9
+29-7	84_ブーツ8	93_煌めく装飾品9
+29-6	82_帽子8	94_ブーツ9
+29-5	81_鎧8	92_帽子9
+29-4	87_魔法武器8	91_鎧9
+29-3	85_華麗な装飾品8	97_魔法武器9
+29-2	86_物理武器8	95_華麗な装飾品9
+29-1	85_華麗な装飾品8	96_物理武器9
+28-10	86_物理武器8	87_魔法武器8
+28-9	83_煌めく装飾品8	85_華麗な装飾品8
+28-8	84_ブーツ8	83_煌めく装飾品8
+28-7	82_帽子8	83_煌めく装飾品8
+28-6	81_鎧8	84_ブーツ8
+28-5	87_魔法武器8	82_帽子8
+28-4	86_物理武器8	81_鎧8
+28-3	86_物理武器8	87_魔法武器8
+28-2	81_鎧8	85_華麗な装飾品8
+28-1	84_ブーツ8	86_物理武器8
+27-10	82_帽子8	86_物理武器8
+27-9	81_鎧8	84_ブーツ8
+27-8	87_魔法武器8	82_帽子8
+27-7	85_華麗な装飾品8	81_鎧8
+27-6	86_物理武器8	87_魔法武器8
+27-5	82_帽子8	85_華麗な装飾品8
+27-4	81_鎧8	86_物理武器8
+27-3	87_魔法武器8	83_煌めく装飾品8
+27-2	85_華麗な装飾品8	81_鎧8
+27-1	83_煌めく装飾品8	84_ブーツ8
+26-10	72_帽子7	82_帽子8
+26-9	76_物理武器7	81_鎧8
+26-8	73_煌めく装飾品7	87_魔法武器8
+26-7	76_物理武器7	85_華麗な装飾品8
+26-6	77_魔法武器7	86_物理武器8
+26-5	75_華麗な装飾品7	83_煌めく装飾品8
+26-4	73_煌めく装飾品7	84_ブーツ8
+26-3	76_物理武器7	82_帽子8
+26-2	74_ブーツ7	81_鎧8
+26-1	72_帽子7	87_魔法武器8
+25-10	71_鎧7	85_華麗な装飾品8
+25-9	77_魔法武器7	83_煌めく装飾品8
+25-8	75_華麗な装飾品7	86_物理武器8
+25-7	74_ブーツ7	84_ブーツ8
+25-6	73_煌めく装飾品7	82_帽子8
+25-5	74_ブーツ7	81_鎧8
+25-4	72_帽子7	87_魔法武器8
+25-3	71_鎧7	85_華麗な装飾品8
+25-2	77_魔法武器7	83_煌めく装飾品8
+25-1	75_華麗な装飾品7	83_煌めく装飾品8
+24-10	74_ブーツ7	76_物理武器7
+24-9	72_帽子7	77_魔法武器7
+24-8	71_鎧7	75_華麗な装飾品7
+24-7	77_魔法武器7	73_煌めく装飾品7
+24-6	75_華麗な装飾品7	73_煌めく装飾品7
+24-5	76_物理武器7	74_ブーツ7
+24-4	73_煌めく装飾品7	72_帽子7
+24-3	74_ブーツ7	71_鎧7
+24-2	72_帽子7	77_魔法武器7
+24-1	71_鎧7	75_華麗な装飾品7
+23-10	77_魔法武器7	76_物理武器7
+23-9	75_華麗な装飾品7	76_物理武器7
+23-8	76_物理武器7	74_ブーツ7
+23-7	71_鎧7	72_帽子7
+23-6	74_ブーツ7	71_鎧7
+23-5	72_帽子7	77_魔法武器7
+23-4	71_鎧7	75_華麗な装飾品7
+23-3	77_魔法武器7	76_物理武器7
+23-2	75_華麗な装飾品7	73_煌めく装飾品7
+23-1	76_物理武器7	71_鎧7
+22-10	62_帽子6	74_ブーツ7
+22-9	63_煌めく装飾品6	72_帽子7
+22-8	67_魔法武器6	71_鎧7
+22-7	65_華麗な装飾品6	77_魔法武器7
+22-6	66_物理武器6	75_華麗な装飾品7
+22-5	63_煌めく装飾品6	76_物理武器7
+22-4	64_ブーツ6	73_煌めく装飾品7
+22-3	62_帽子6	74_ブーツ7
+22-2	61_鎧6	72_帽子7
+22-1	67_魔法武器6	71_鎧7
+21-10	65_華麗な装飾品6	77_魔法武器7
+21-9	66_物理武器6	75_華麗な装飾品7
+21-8	63_煌めく装飾品6	73_煌めく装飾品7
+21-7	64_ブーツ6	76_物理武器7
+21-6	62_帽子6	74_ブーツ7
+21-5	61_鎧6	72_帽子7
+21-4	67_魔法武器6	71_鎧7
+21-3	65_華麗な装飾品6	77_魔法武器7
+21-2	63_煌めく装飾品6	75_華麗な装飾品7
+21-1	66_物理武器6	75_華麗な装飾品7
+20-10	64_ブーツ6	66_物理武器6
+20-9	62_帽子6	63_煌めく装飾品6
+20-8	61_鎧6	67_魔法武器6
+20-7	67_魔法武器6	65_華麗な装飾品6
+20-6	65_華麗な装飾品6	66_物理武器6
+20-5	66_物理武器6	63_煌めく装飾品6
+20-4	63_煌めく装飾品6	64_ブーツ6
+20-3	64_ブーツ6	62_帽子6
+20-2	62_帽子6	61_鎧6
+20-1	61_鎧6	67_魔法武器6
+19-10	67_魔法武器6	65_華麗な装飾品6
+19-9	65_華麗な装飾品6	64_ブーツ6
+19-8	66_物理武器6	63_煌めく装飾品6
+19-7	63_煌めく装飾品6	64_ブーツ6
+19-6	64_ブーツ6	62_帽子6
+19-5	62_帽子6	61_鎧6
+19-4	61_鎧6	67_魔法武器6
+19-3	61_鎧6	65_華麗な装飾品6
+19-2	65_華麗な装飾品6	63_煌めく装飾品6
+19-1	66_物理武器6	61_鎧6
+18-10	56_物理武器5	64_ブーツ6
+18-9	54_ブーツ5	62_帽子6
+18-8	57_魔法武器5	61_鎧6
+18-7	55_華麗な装飾品5	67_魔法武器6
+18-6	56_物理武器5	65_華麗な装飾品6
+18-5	53_煌めく装飾品5	63_煌めく装飾品6
+18-4	54_ブーツ5	66_物理武器6
+18-3	52_帽子5	64_ブーツ6
+18-2	51_鎧5	62_帽子6
+18-1	57_魔法武器5	61_鎧6
+17-10	55_華麗な装飾品5	67_魔法武器6
+17-9	56_物理武器5	65_華麗な装飾品6
+17-8	53_煌めく装飾品5	66_物理武器6
+17-7	54_ブーツ5	63_煌めく装飾品6
+17-6	52_帽子5	64_ブーツ6
+17-5	51_鎧5	62_帽子6
+17-4	57_魔法武器5	61_鎧6
+17-3	55_華麗な装飾品5	67_魔法武器6
+17-2	53_煌めく装飾品5	65_華麗な装飾品6
+17-1	56_物理武器5	66_物理武器6
+16-10	54_ブーツ5	52_帽子5
+16-9	52_帽子5	53_煌めく装飾品5
+16-8	51_鎧5	57_魔法武器5
+16-7	57_魔法武器5	55_華麗な装飾品5
+16-6	55_華麗な装飾品5	56_物理武器5
+16-5	56_物理武器5	53_煌めく装飾品5
+16-4	53_煌めく装飾品5	54_ブーツ5
+16-3	54_ブーツ5	52_帽子5
+16-2	52_帽子5	51_鎧5
+16-1	51_鎧5	57_魔法武器5
+15-10	57_魔法武器5	55_華麗な装飾品5
+15-9	55_華麗な装飾品5	53_煌めく装飾品5
+15-8	53_煌めく装飾品5	56_物理武器5
+15-7	56_物理武器5	54_ブーツ5
+15-6	54_ブーツ5	52_帽子5
+15-5	52_帽子5	51_鎧5
+15-4	51_鎧5	57_魔法武器5
+15-3	57_魔法武器5	55_華麗な装飾品5
+15-2	55_華麗な装飾品5	53_煌めく装飾品5
+15-1	53_煌めく装飾品5	56_物理武器5
+14-10	43_煌めく装飾品4	54_ブーツ5
+14-9	47_魔法武器4	52_帽子5
+14-8	47_魔法武器4	51_鎧5
+14-7	45_華麗な装飾品4	57_魔法武器5
+14-6	43_煌めく装飾品4	55_華麗な装飾品5
+14-5	46_物理武器4	56_物理武器5
+14-4	44_ブーツ4	53_煌めく装飾品5
+14-3	42_帽子4	54_ブーツ5
+14-2	41_鎧4	52_帽子5
+14-1	47_魔法武器4	51_鎧5
+13-10	45_華麗な装飾品4	57_魔法武器5
+13-9	45_華麗な装飾品4	55_華麗な装飾品5
+13-8	43_煌めく装飾品4	56_物理武器5
+13-7	44_ブーツ4	53_煌めく装飾品5
+13-6	42_帽子4	54_ブーツ5
+13-5	41_鎧4	52_帽子5
+13-4	47_魔法武器4	51_鎧5
+13-3	45_華麗な装飾品4	57_魔法武器5
+13-2	43_煌めく装飾品4	55_華麗な装飾品5
+13-1	44_ブーツ4	56_物理武器5
+12-10	44_ブーツ4	42_帽子4
+12-9	42_帽子4	41_鎧4
+12-8	41_鎧4	46_物理武器4
+12-7	46_物理武器4	45_華麗な装飾品4
+12-6	45_華麗な装飾品4	47_魔法武器4
+12-5	44_ブーツ4	43_煌めく装飾品4
+12-4	43_煌めく装飾品4	44_ブーツ4
+12-3	44_ブーツ4	42_帽子4
+12-2	42_帽子4	41_鎧4
+12-1	41_鎧4	46_物理武器4
+11-10	46_物理武器4	47_魔法武器4
+11-9	43_煌めく装飾品4	45_華麗な装飾品4
+11-8	46_物理武器4	42_帽子4
+11-7	43_煌めく装飾品4	44_ブーツ4
+11-6	44_ブーツ4	42_帽子4
+11-5	42_帽子4	41_鎧4
+11-4	41_鎧4	47_魔法武器4
+11-3	46_物理武器4	41_鎧4
+11-2	45_華麗な装飾品4	46_物理武器4
+11-1	47_魔法武器4	45_華麗な装飾品4
+10-10	33_煌めく装飾品3	43_煌めく装飾品4
+10-9	33_煌めく装飾品3	44_ブーツ4
+10-8	37_魔法武器3	42_帽子4
+10-7	35_華麗な装飾品3	41_鎧4
+10-6	33_煌めく装飾品3	47_魔法武器4
+10-5	33_煌めく装飾品3	46_物理武器4
+10-5	46_物理武器4	33_煌めく装飾品3
+10-4	34_ブーツ3	45_華麗な装飾品4
+10-3	32_帽子3	43_煌めく装飾品4
+10-2	31_鎧3	44_ブーツ4
+10-1	37_魔法武器3	42_帽子4
+9-10	35_華麗な装飾品3	41_鎧4
+9-9	35_華麗な装飾品3	47_魔法武器4
+9-8	33_煌めく装飾品3	46_物理武器4
+9-7	34_ブーツ3	45_華麗な装飾品4
+9-6	32_帽子3	43_煌めく装飾品4
+9-5	31_鎧3	44_ブーツ4
+9-4	37_魔法武器3	42_帽子4
+9-3	35_華麗な装飾品3	41_鎧4
+9-2	33_煌めく装飾品3	47_魔法武器4
+9-1	31_鎧3	46_物理武器4
+8-10	34_ブーツ3	
+8-9	32_帽子3	
+8-8	31_鎧3	
+8-7	36_物理武器3	37_魔法武器3
+8-6	35_華麗な装飾品3	36_物理武器3
+8-5	33_煌めく装飾品3	35_華麗な装飾品3
+8-4	36_物理武器3	33_煌めく装飾品3
+8-3	34_ブーツ3	
+8-2	32_帽子3	
+8-1	31_鎧3	
+7-10	36_物理武器3	37_魔法武器3
+7-9	35_華麗な装飾品3	36_物理武器3
+7-8	37_魔法武器3	35_華麗な装飾品3
+7-7	33_煌めく装飾品3	36_物理武器3
+7-6	34_ブーツ3	
+7-5	32_帽子3	
+7-4	31_鎧3	
+7-3	36_物理武器3	37_魔法武器3
+7-2	35_華麗な装飾品3	36_物理武器3
+7-1	37_魔法武器3	35_華麗な装飾品3
+6-10	24_ブーツ2	33_煌めく装飾品3
+6-9	22_帽子2	34_ブーツ3
+6-8	21_鎧2	32_帽子3
+6-7	27_魔法武器2	31_鎧3
+6-6	26_物理武器2	37_魔法武器3
+6-5	25_華麗な装飾品2	36_物理武器3
+6-4	23_煌めく装飾品2	35_華麗な装飾品3
+6-3	24_ブーツ2	33_煌めく装飾品3
+6-2	22_帽子2	34_ブーツ3
+6-1	21_鎧2	32_帽子3
+5-10	27_魔法武器2	31_鎧3
+5-9	26_物理武器2	37_魔法武器3
+5-8	25_華麗な装飾品2	36_物理武器3
+5-7	23_煌めく装飾品2	35_華麗な装飾品3
+5-6	24_ブーツ2	33_煌めく装飾品3
+5-5	22_帽子2	34_ブーツ3
+5-4	21_鎧2	32_帽子3
+5-3	27_魔法武器2	31_鎧3
+5-2	26_物理武器2	37_魔法武器3
+5-1	25_華麗な装飾品2	36_物理武器3
+4-10	23_煌めく装飾品2	22_帽子2
+4-9	24_ブーツ2	23_煌めく装飾品2
+4-8	22_帽子2	21_鎧2
+4-7	21_鎧2	27_魔法武器2
+4-6	27_魔法武器2	26_物理武器2
+4-5	26_物理武器2	25_華麗な装飾品2
+4-4	25_華麗な装飾品2	23_煌めく装飾品2
+4-3	23_煌めく装飾品2	24_ブーツ2
+4-2	24_ブーツ2	21_鎧2
+4-1	22_帽子2	27_魔法武器2
+3-10	21_鎧2	26_物理武器2
+3-9	27_魔法武器2	25_華麗な装飾品2
+3-8	26_物理武器2	23_煌めく装飾品2
+3-7	25_華麗な装飾品2	22_帽子2
+3-6	23_煌めく装飾品2	21_鎧2
+3-5	24_ブーツ2	27_魔法武器2
+3-4	22_帽子2	26_物理武器2
+3-3	21_鎧2	25_華麗な装飾品2
+3-2	27_魔法武器2	23_煌めく装飾品2
+3-1	26_物理武器2	24_ブーツ2
+`;
+
+// ─── パース ───────────────────────────────────────────────
+function parseItem(str) {
+  str = str.trim();
+  const uscore = str.indexOf('_');
+  if (uscore === -1) return null;
+  const id = parseInt(str.slice(0, uscore));
+  const typeAndRank = str.slice(uscore + 1);
+  // ランクは末尾の連続する数字
+  const m = typeAndRank.match(/(\d+)$/);
+  if (!m) return null;
+  const rank = parseInt(m[1]);
+  const type = typeAndRank.slice(0, typeAndRank.length - m[1].length);
+  return { id, type, rank };
+}
+
+function parseData(text) {
+  const stages = [];
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    // タブ区切り、または2文字以上のスペース区切りに対応
+    const parts = line.split(/\t+|[ ]{2,}/);
+    if (parts.length < 3) continue;
+    const stage = parts[0].trim();
+    const drop1 = parseItem(parts[1]);
+    const drop2 = parseItem(parts[2]);
+    if (drop1 && drop2) stages.push({ stage, id: `stage_${stages.length}`, drops: [drop1, drop2] });
+  }
+  return stages;
+}
+
+// ─── 分析 ─────────────────────────────────────────────────
+function analyzeData(stages) {
+  // 最高ランク・最低ランクを検出（目標入力グリッドの範囲に使用）
+  let maxRank = 0, minRank = Infinity;
+  for (const s of stages)
+    for (const d of s.drops) {
+      if (d.rank > maxRank) maxRank = d.rank;
+      if (d.rank < minRank) minRank = d.rank;
+    }
+  return { minRank, maxRank };
+}
+
+// ─── 描画: ステージ一覧 ───────────────────────────────────
+function renderStageTable(stages, maxRank) {
+  let h = '<table><thead><tr><th>ステージ</th><th>ドロップ1</th><th>ドロップ2</th></tr></thead><tbody>';
+  for (const s of stages) {
+    const fmt = d => {
+      const cls = d.rank === maxRank ? 'r9' : 'r8';
+      const label = getTypeLabel(ITEM_TYPES.indexOf(d.type));
+      return `<span class="${cls}">${label}&nbsp;R${d.rank}</span>`;
+    };
+    h += `<tr><td>${s.stage}</td><td>${fmt(s.drops[0])}</td><td>${fmt(s.drops[1])}</td></tr>`;
+  }
+  h += '</tbody></table>';
+  document.getElementById('stageTableWrap').innerHTML = h;
+}
+
+// ─── 描画: 分布テーブル ───────────────────────────────────
+function renderDistTable(stages, maxRank, lowerRank) {
+  let h = '<table><thead><tr><th>ステージ</th>';
+  ITEM_TYPES.forEach((t, i) => { h += `<th>${getTypeLabel(i)}</th>`; });
+  h += '</tr></thead><tbody>';
+
+  for (const s of stages) {
+    h += `<tr><td>${s.stage}</td>`;
+    for (const t of ITEM_TYPES) {
+      const drops = s.drops.filter(d => d.type === t);
+      if (drops.length === 0) {
+        h += '<td class="r-dash">－</td>';
+      } else {
+        const cells = drops.map(d => {
+          const cls = d.rank === maxRank ? 'r9' : 'r8';
+          return `<span class="${cls}">R${d.rank}</span>`;
+        });
+        h += `<td>${cells.join(' ')}</td>`;
+      }
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  document.getElementById('distTableWrap').innerHTML = h;
+}
+
+// ─── 表示ラベル（絵文字付き） ─────────────────────────────
+function getTypeLabel(i) {
+  return `${EMOJI_TYPES[i]} ${ITEM_TYPES[i]}`;
+}
+
+// ─── 必要個数入力（ランク × 装備種類） ───────────────────────
+function buildTargetInputs(minRank, maxRank) {
+  const grid = document.getElementById('targetsGrid');
+
+  // リセットボタン（この表内の数値入力をすべて0にします）
+  let h = '';
+  h += '<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">';
+  h += '<button type="button" onclick="resetTargets()" style="background:#552a2a;color:#ffd;border:1px solid #773333;padding:6px 12px;border-radius:6px;cursor:pointer">リセット</button>';
+  h += '<button type="button" onclick="importEquipmentCalc()" style="background:#2a3a5a;color:#89c4f4;border:1px solid #4a6aaa;padding:6px 12px;border-radius:6px;cursor:pointer">equipment_calcからインポート</button>';
+  h += '<span style="font-size:0.85rem;color:#889">どちらもこの表の数値を上書きします</span>';
+  h += '</div>';
+
+  h += '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px">';
+  for (let r = minRank; r <= maxRank; r++) {
+    h += `<button type="button" class="rank-toggle on" id="rankVis_${r}" data-on="true" onclick="onRankVisChange(${r})">Rank${r}</button>`;
+  }
+  h += '</div>';
+
+  h += '<div class="tbl-wrap"><table style="width:100%"><thead><tr>';
+  h += '<th style="text-align:left">装備ランク</th>';
+  ITEM_TYPES.forEach((t, i) => { h += `<th id="typeLabel_${i}">${getTypeLabel(i)}</th>`; });
+  h += '</tr></thead><tbody>';
+  for (let r = minRank; r <= maxRank; r++) {
+    h += `<tr id="rankRow_${r}"><td style="text-align:left">Rank ${r}</td>`;
+    ITEM_TYPES.forEach((t, i) => {
+      const def = r === maxRank ? DEFAULT_TARGETS[i] : (r === maxRank - 1 ? DEFAULT_MIN8[i] : 0);
+      h += `<td><input type="number" class="tgt-input" id="req_${i}_${r}" value="${def}" min="0" step="1"></td>`;
+    });
+    h += '</tr>';
+  }
+  h += '</tbody></table></div>';
+  grid.innerHTML = h;
+}
+
+// リセット：この `targetsGrid` 内の数値入力をすべて0にする
+function resetTargets() {
+  const grid = document.getElementById('targetsGrid');
+  if (!grid) return;
+  const inputs = grid.querySelectorAll('input[type="number"]');
+  inputs.forEach(inp => {
+    try {
+      inp.value = 0;
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      inp.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+  });
+  if (typeof saveFormState === 'function') saveFormState();
+}
+
+// equipment_calc.html の「02: 設計図の必要数および保有数」を目標個数へ反映する
+function importEquipmentCalc() {
+  const EQUIPMENT_CALC_STORAGE_KEY = 'trickcal_equipment_plan';
+  let state;
+  try { state = JSON.parse(localStorage.getItem(EQUIPMENT_CALC_STORAGE_KEY)); } catch (e) { state = null; }
+  if (!state || typeof state !== 'object') {
+    alert('equipment_calc の保存データが見つかりません。先に equipment_calc.html で必要数を入力してください。');
+    return;
+  }
+
+  const getSavedNumber = (group, i, rank) => Math.max(0, parseFloat((group || {})[`${i}_${rank}`]) || 0);
+  const blueprintTotals = {};
+  for (let i = 0; i < ITEM_TYPES.length; i++) {
+    blueprintTotals[i] = {};
+    for (let rank = 2; rank <= 9; rank++) blueprintTotals[i][rank] = 0;
+  }
+  for (let i = 0; i < ITEM_TYPES.length; i++) {
+    for (let targetRank = 2; targetRank <= 9; targetRank++) {
+      const equipmentCount = getSavedNumber(state.req01, i, targetRank);
+      const recipe = REQUIREMENTS_BY_TARGET_RANK[targetRank];
+      if (!equipmentCount || !recipe) continue;
+      for (const [blueprintRank, amount] of Object.entries(recipe)) {
+        blueprintTotals[i][blueprintRank] += equipmentCount * amount;
+      }
+    }
+  }
+
+  const { minRank, maxRank } = currentAnalysis || {};
+  if (minRank === undefined || maxRank === undefined) return;
+  for (let i = 0; i < ITEM_TYPES.length; i++) {
+    for (let rank = minRank; rank <= maxRank; rank++) {
+      const input = document.getElementById(`req_${i}_${rank}`);
+      if (!input) continue;
+      const need = (blueprintTotals[i][rank] || 0) - getSavedNumber(state.own02, i, rank);
+      input.value = Math.max(0, need);
+    }
+  }
+  for (let rank = minRank; rank <= maxRank; rank++) setRankVis(rank, true);
+  saveFormState();
+}
+
+// ON/OFF状態を直接設定（トグルではなく状態復元にも使う）
+function setRankVis(r, on) {
+  const btn = document.getElementById(`rankVis_${r}`);
+  const row = document.getElementById(`rankRow_${r}`);
+  if (btn) {
+    btn.dataset.on = on ? 'true' : 'false';
+    btn.classList.toggle('on', on);
+    btn.classList.toggle('off', !on);
+    btn.textContent = `Rank ${r}`;
+  }
+  if (row) row.style.display = on ? '' : 'none';
+}
+
+function onRankVisChange(r) {
+  const btn = document.getElementById(`rankVis_${r}`);
+  if (!btn) return;
+  setRankVis(r, btn.dataset.on === 'false');
+  saveFormState();
+}
+
+function getRequiredAmount(i, rank) {
+  const visBtn = document.getElementById(`rankVis_${rank}`);
+  if (visBtn && visBtn.dataset.on === 'false') return 0; // OFFのランクは入力値を保持しつつ計算上は0扱い
+  const el = document.getElementById(`req_${i}_${rank}`);
+  return el ? (parseFloat(el.value) || 0) : 0;
+}
+
+// 全ランク × 全装備種類の目標一覧を取得
+function getAllTargets(minRank, maxRank) {
+  const list = [];
+  for (let r = minRank; r <= maxRank; r++) {
+    for (let i = 0; i < ITEM_TYPES.length; i++) {
+      const t = ITEM_TYPES[i];
+      list.push({ type: t, rank: r, key: `${t}_${r}`, target: getRequiredAmount(i, r) });
+    }
+  }
+  return list;
+}
+
+// ペナルティ調整モード用: ランクごとの「余りスコア」(-1000〜100) を 1個あたりのペナルティに変換
+function getRankScore(r) {
+  const el = document.getElementById(`rankScore_${r}`);
+  let v = el ? parseFloat(el.value) : 0;
+  if (isNaN(v)) v = 0;
+  return Math.max(-1000, Math.min(100, v));
+}
+function penaltyForRank(r) {
+  return (100 - getRankScore(r)) / 100;
+}
+
+function buildRankScoreInputs(minRank, maxRank) {
+  let h = '<div style="font-size:0.82rem;color:#89c4f4;margin-bottom:8px">ペナルティ調整モード用：ランク別「余り」スコア（-1000〜100。100に近いほど余りを許容し、低いほど余りを嫌う）</div>';
+  h += '<div style="display:flex;flex-wrap:wrap;gap:10px">';
+  for (let r = maxRank; r >= minRank; r--) {
+    h += `<label style="font-size:0.82rem;color:#aaa;display:flex;align-items:center;gap:4px">
+      Rank${r}
+      <input type="number" class="tgt-input" id="rankScore_${r}" style="width:64px" value="0" min="-1000" max="100" step="1">
+    </label>`;
+  }
+  h += '</div>';
+  document.getElementById('rankScoreGrid').innerHTML = h;
+}
+
+// ─── 一人分を追加 ─────────────────────────────────────────
+// 装備1個をランクXまで強化するのに必要な設計図数（ランクごと。種類によらず共通）
+const REQUIREMENTS_BY_TARGET_RANK = {
+  9: { 9: 52, 8: 20 },
+  8: { 8: 46, 7: 18 },
+  7: { 7: 42 },
+  6: { 6: 36, 5: 14 },
+  5: { 5: 30, 4: 12 },
+  4: { 4: 20 },
+  3: { 3: 18, 2: 8 },
+  2: { 2: 10 },
+};
+
+// ─── 入力内容の自動保存（localStorage） ───────────────────────
+const FORM_STORAGE_KEY = 'trickcalTools.formState.v1';
+
+function saveFormState() {
+  const state = { req: {}, rankVis: {}, rankScore: {} };
+  document.querySelectorAll('input[id^="req_"]').forEach(el => { state.req[el.id] = el.value; });
+  document.querySelectorAll('[id^="rankVis_"]').forEach(el => { state.rankVis[el.id] = el.dataset.on !== 'false'; });
+  document.querySelectorAll('input[id^="rankScore_"]').forEach(el => { state.rankScore[el.id] = el.value; });
+
+  const modeRadio = document.querySelector('input[name="calcMode"]:checked');
+  if (modeRadio) state.calcMode = modeRadio.value;
+
+  try { localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ストレージ利用不可は無視 */ }
+}
+
+function loadFormState() {
+  let state;
+  try { state = JSON.parse(localStorage.getItem(FORM_STORAGE_KEY)); } catch (e) { state = null; }
+  if (!state) return;
+
+  if (state.req) {
+    for (const [id, val] of Object.entries(state.req)) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+  }
+  if (state.rankVis) {
+    for (const [id, on] of Object.entries(state.rankVis)) {
+      setRankVis(parseInt(id.slice('rankVis_'.length)), on);
+    }
+  }
+  if (state.rankScore) {
+    for (const [id, val] of Object.entries(state.rankScore)) {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    }
+  }
+
+  if (state.calcMode) {
+    const radio = document.querySelector(`input[name="calcMode"][value="${state.calcMode}"]`);
+    if (radio) radio.checked = true;
+  }
+}
+
+// 計算モードに応じてペナルティ調整モード用スコア欄の表示を切り替え
+function getSelectedCalcMode() {
+  const el = document.querySelector('input[name="calcMode"]:checked');
+  return el ? el.value : '1';
+}
+function onCalcModeChange() {
+  const grid = document.getElementById('rankScoreGrid');
+  if (grid) grid.style.display = getSelectedCalcMode() === '3' ? '' : 'none';
+}
+
+// ─── メイン処理 ──────────────────────────────────────────
+let currentStages = null;
+let currentAnalysis = null;
+
+function processData(stages) {
+  currentStages = stages;
+  currentAnalysis = analyzeData(stages);
+  const { minRank, maxRank } = currentAnalysis;
+  buildTargetInputs(minRank, maxRank);
+  buildRankScoreInputs(minRank, maxRank);
+  loadFormState();
+  onCalcModeChange();
+  document.addEventListener('input', saveFormState);
+  document.addEventListener('change', saveFormState);
+  renderStageTable(stages, maxRank);
+  renderDistTable(stages, maxRank, maxRank - 1);
+  document.getElementById('calcBtn').disabled = false;
+}
+
+// ─── ヘルパー ─────────────────────────────────────────────
+function sig3(x) {
+  if (Math.abs(x) < 1e-9) return '0';
+  const rounded = Math.round(x);
+  if (Math.abs(x - rounded) < 1e-6) return rounded.toString();
+  return parseFloat(x.toFixed(3)).toString();
+}
+function pct(x, total) {
+  if (total < 1e-9) return '—';
+  return (x / total * 100).toFixed(2) + '%';
+}
+
+// ─── LP モデル構築 ──────────────────────────────────────────
+// 変数:  x_{stage} … 各ステージの周回数 (≥0)
+// キー:  ${type}_${rank} … 装備種類×ランクを表す識別子
+//
+// 最小周回数モード: 余り完全許容・周回数最小化
+//   制約: Σ x_s * [drop(s)=key] ≥ target_key （目標がある項目のみ）
+//   目的: min Σ x_s
+//
+// 過不足ゼロモード: 余り不許容・不足最小化
+//   制約: Σ x_s * [drop(s)=key] + short_key = target_key （short_key ≥ 0 のため余りは発生しない）
+//   目的: min Σ short_key（同点なら周回数が少ない解を優先）
+//
+// ペナルティ調整モード: 余り許容＋ランク別ペナルティ（最小周回数モードの修正版）
+//   制約: Σ x_s * [drop(s)=key] − excess_key = target_key （excess_key ≥ 0 が余り量）
+//   目的: min Σ x_s + Σ penaltyForRank(rank) * excess_key
+
+// 要求されているがどのステージからもドロップしない項目を検出
+function findUnreachableKeys(stages, targetList) {
+  const supply = new Set();
+  for (const s of stages) {
+    for (const d of s.drops) {
+      if (!ITEM_TYPES.includes(d.type)) continue;
+      supply.add(`${d.type}_${d.rank}`);
+    }
+  }
+  return targetList.filter(it => it.target > 0 && !supply.has(it.key));
+}
+
+function getStageVariableName(stage) {
+  return `x_${stage.id}`;
+}
+
+// 計算結果（各ステージの周回数）から実収集量を種類×ランクごとに集計
+function computeActuals(stages, result) {
+  const actuals = {};
+  for (const s of stages) {
+    const runs = result[getStageVariableName(s)] || 0;
+    if (runs <= 1e-9) continue;
+    for (const d of s.drops) {
+      if (!ITEM_TYPES.includes(d.type)) continue;
+      const key = `${d.type}_${d.rank}`;
+      actuals[key] = (actuals[key] || 0) + runs;
+    }
+  }
+  return actuals;
+}
+
+// 表示対象の行（目標がある、または実収集量がある項目）を抽出
+function buildKeyRows(targetList, actuals) {
+  const rows = [];
+  for (const item of targetList) {
+    const actual = actuals[item.key] || 0;
+    if (item.target > 0 || actual > 1e-6) {
+      rows.push({ type: item.type, rank: item.rank, target: item.target, actual });
+    }
+  }
+  rows.sort((a, b) => b.rank - a.rank || ITEM_TYPES.indexOf(a.type) - ITEM_TYPES.indexOf(b.type));
+  return rows;
+}
+
+// ─── 最小周回数モード: 余り完全許容・周回数最小化 ───────────
+function buildModelMinRuns(stages, activeList) {
+  const constraints = {};
+  const variables   = {};
+
+  for (const item of activeList) constraints[`min_${item.key}`] = { min: item.target };
+
+  for (const s of stages) {
+    const v = { obj: 1 };
+    for (const d of s.drops) {
+      if (!ITEM_TYPES.includes(d.type)) continue;
+      const key = `${d.type}_${d.rank}`;
+      if (constraints[`min_${key}`]) v[`min_${key}`] = (v[`min_${key}`] || 0) + 1;
+    }
+    variables[getStageVariableName(s)] = v;
+  }
+
+  return { optimize: 'obj', opType: 'min', constraints, variables };
+}
+
+// ─── 過不足ゼロモード: 余り不許容・不足最小化 ───────────────
+function buildModelMinShortfall(stages, activeList) {
+  const constraints = {};
+  const variables   = {};
+
+  for (const item of activeList) constraints[`dev_${item.key}`] = { equal: item.target };
+
+  for (const s of stages) {
+    const v = { obj: 1e-6 }; // 不足量が同じなら周回数が少ない解を優先
+    for (const d of s.drops) {
+      if (!ITEM_TYPES.includes(d.type)) continue;
+      const key = `${d.type}_${d.rank}`;
+      if (constraints[`dev_${key}`]) v[`dev_${key}`] = (v[`dev_${key}`] || 0) + 1;
+    }
+    variables[getStageVariableName(s)] = v;
+  }
+
+  for (const item of activeList) {
+    variables[`short_${item.key}`] = { obj: 1, [`dev_${item.key}`]: 1 };
+  }
+
+  return { optimize: 'obj', opType: 'min', constraints, variables };
+}
+
+// ─── ペナルティ調整モード: 余り許容＋ランク別ペナルティ ─────
+function buildModelPenalizedExcess(stages, activeList) {
+  const constraints = {};
+  const variables   = {};
+
+  for (const item of activeList) constraints[`dev_${item.key}`] = { equal: item.target };
+
+  for (const s of stages) {
+    const v = { obj: 1 };
+    for (const d of s.drops) {
+      if (!ITEM_TYPES.includes(d.type)) continue;
+      const key = `${d.type}_${d.rank}`;
+      if (constraints[`dev_${key}`]) v[`dev_${key}`] = (v[`dev_${key}`] || 0) + 1;
+    }
+    variables[getStageVariableName(s)] = v;
+  }
+
+  for (const item of activeList) {
+    variables[`excess_${item.key}`] = { obj: penaltyForRank(item.rank), [`dev_${item.key}`]: -1 };
+  }
+
+  return { optimize: 'obj', opType: 'min', constraints, variables };
+}
+
+// ─── 計算結果の描画 ─────────────────────────────────────────
+function renderKeyTable(rows, mode) {
+  const diffLabel = mode === 'excess' ? '余り' : '不足';
+  let h = `<div class="tbl-wrap"><table><thead><tr>
+    <th>装備種類</th><th>ランク</th><th>目標</th><th>収集量</th><th>${diffLabel}</th>
+  </tr></thead><tbody>`;
+  for (const r of rows) {
+    const diff    = mode === 'excess' ? (r.actual - r.target) : (r.target - r.actual);
+    const flagged = diff > 0.01;
+    const cls     = flagged ? (mode === 'excess' ? 'over' : 'under') : 'exact';
+    h += `<tr>
+      <td style="text-align:left">${getTypeLabel(ITEM_TYPES.indexOf(r.type))}</td>
+      <td>Rank${r.rank}</td>
+      <td>${r.target}</td>
+      <td>${sig3(r.actual)}</td>
+      <td class="${cls}">${flagged ? sig3(diff) : '—'}</td>
+    </tr>`;
+  }
+  h += '</tbody></table></div>';
+  return h;
+}
+
+// 周回箇所はこのツールの核心情報のため、折りたたまずに常時表示する
+function renderStageRunsTable(stages, result) {
+  const active = stages
+    .map(s => ({ id: s.stage, runs: result[getStageVariableName(s)] || 0, drops: s.drops }))
+    .filter(sd => sd.runs > 1e-9)
+    .sort((a, b) => b.runs - a.runs);
+  const totalRuns = active.reduce((s, sd) => s + sd.runs, 0);
+
+  let h = `<h4 style="color:#89c4f4;font-size:0.85rem;margin:14px 0 6px">周回するステージと周回数（非ゼロのみ、降順）</h4>`;
+  h += `<div class="tbl-wrap"><table>
+    <thead><tr><th>ステージ</th><th>周回数</th><th>割合</th><th>ドロップ1</th><th>ドロップ2</th></tr></thead><tbody>`;
+  for (const sd of active) {
+    const fmt = d => `<span class="${d.rank === currentAnalysis.maxRank ? 'r9' : 'r8'}">${getTypeLabel(ITEM_TYPES.indexOf(d.type))}&nbsp;R${d.rank}</span>`;
+    h += `<tr><td>${sd.id}</td><td>${sig3(sd.runs)}</td><td>${pct(sd.runs, totalRuns)}</td><td>${fmt(sd.drops[0])}</td><td>${fmt(sd.drops[1])}</td></tr>`;
+  }
+  h += '</tbody></table></div>';
+  return h;
+}
+
+function renderDropEstimate(totalRuns) {
+  const estimatedRuns = Math.ceil(totalRuns * 1.2);
+  const candyNeeded = estimatedRuns * 10;
+  return `<p style="margin:8px 0;font-size:0.88rem;color:#aab">実際のドロップはランダムです。総周回数はこれに1.2をかけた程度の数、すなわち <span style="color:#ffd700;font-weight:bold;font-size:1.1rem">${estimatedRuns}</span> となります。必要キャンディ量は <span style="color:#ffd700;font-weight:bold;font-size:1.1rem">${candyNeeded}</span> です。</p>`;
+}
+
+function renderMinRunsResult(res, stages, targetList) {
+  let h = `<h3 class="result-h">最小周回数モード（余り許容）</h3>`;
+  if (!res.feasible) {
+    h += '<p style="color:#f88">⚠ 計算できませんでした。</p>';
+    return h;
+  }
+  const actuals    = computeActuals(stages, res);
+  const totalRuns  = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
+  const rows       = buildKeyRows(targetList, actuals);
+  const excessRows = rows.filter(r => r.actual - r.target > 0.01);
+
+  h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
+  h += renderDropEstimate(totalRuns);
+  h += excessRows.length > 0
+    ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">余りが発生（不可避）</span> 要求数を満たす最小周回数の解では、以下の項目に余りが生じます。</p>`
+    : `<p style="margin:8px 0"><span class="badge badge-avoidable">余りなし</span> すべての項目がちょうど目標どおりに集まりました。</p>`;
+  h += renderKeyTable(rows, 'excess');
+  h += renderStageRunsTable(stages, res);
+  return h;
+}
+
+function renderNoExcessResult(res, stages, targetList) {
+  let h = `<h3 class="result-h">過不足ゼロモード（余り不許容）</h3>`;
+  if (!res.feasible) {
+    h += '<p style="color:#f88">⚠ 計算できませんでした。</p>';
+    return h;
+  }
+  const actuals   = computeActuals(stages, res);
+  const totalRuns = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
+  const rows      = buildKeyRows(targetList, actuals);
+  const shortRows = rows.filter(r => r.target - r.actual > 0.01);
+
+  h += `<div class="result-summary"><div class="kv"><span>総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
+  h += renderDropEstimate(totalRuns);
+  h += shortRows.length > 0
+    ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">要求数に未達の項目あり</span> 余りを一切出さない制約の下では、以下の項目が要求数に届きません。</p>`
+    : `<p style="margin:8px 0"><span class="badge badge-avoidable">要求数達成</span> 余りを出さずにすべての項目が目標どおりに集まりました。</p>`;
+  h += renderKeyTable(rows, 'shortfall');
+  h += renderStageRunsTable(stages, res);
+  return h;
+}
+
+function renderPenalizedResult(res, stages, targetList) {
+  let h = `<h3 class="result-h">ペナルティ調整モード（余り許容・ランク別スコア）</h3>`;
+  if (!res.feasible) {
+    h += '<p style="color:#f88">⚠ 計算できませんでした。</p>';
+    return h;
+  }
+  const actuals      = computeActuals(stages, res);
+  const totalRuns    = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
+  const rows         = buildKeyRows(targetList, actuals);
+  const excessRows   = rows.filter(r => r.actual - r.target > 0.01);
+  const totalPenalty = excessRows.reduce((s, r) => s + (r.actual - r.target) * penaltyForRank(r.rank), 0);
+
+  h += `<div class="result-summary">
+    <div class="kv"><span>総周回数</span><span>${sig3(totalRuns)}</span></div>
+    <div class="kv"><span>余りペナルティ合計</span><span>${sig3(totalPenalty)}</span></div>
+    <div class="kv"><span>目的関数値（周回数＋ペナルティ）</span><span>${sig3(res.result || 0)}</span></div>
+  </div>`;
+  h += renderDropEstimate(totalRuns);
+  h += excessRows.length > 0
+    ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">余りが発生</span> ランク別スコアに応じたペナルティ込みで、周回数＋ペナルティを最小化した結果です。</p>`
+    : `<p style="margin:8px 0"><span class="badge badge-avoidable">余りなし</span></p>`;
+  h += renderKeyTable(rows, 'excess');
+  h += renderStageRunsTable(stages, res);
+  return h;
+}
+
+// ─── 計算実行 ──────────────────────────────────────────────
+function runCalc() {
+  if (!currentStages || !currentAnalysis) return;
+  const btn       = document.getElementById('calcBtn');
+  const resultDiv = document.getElementById('calcResult');
+  btn.disabled    = true;
+  resultDiv.innerHTML = '<p class="calc-status">⏳ 計算中...</p>';
+
+  try {
+    if (typeof solver === 'undefined') {
+      throw new Error('LP Solver が読み込まれていません。インターネット接続を確認してください。');
+    }
+    const { minRank, maxRank } = currentAnalysis;
+    const targetList = getAllTargets(minRank, maxRank);
+
+    const unreachable    = findUnreachableKeys(currentStages, targetList);
+    const unreachableSet = new Set(unreachable.map(u => u.key));
+    const activeList     = targetList.filter(it => it.target > 0 && !unreachableSet.has(it.key));
+    const activeListAll  = targetList.filter(it => it.target > 0);
+
+    let html = '';
+    if (unreachable.length > 0) {
+      const list = unreachable.map(u => `${getTypeLabel(ITEM_TYPES.indexOf(u.type))} Rank${u.rank}（目標${u.target}）`).join('、');
+      html += `<div class="infeasible-warning">⚠ 以下の項目はどのステージからもドロップしないため、要求数を満たすことができません：${list}</div>`;
+    }
+
+    const mode = getSelectedCalcMode();
+    if (mode === '2') {
+      const res = solver.Solve(buildModelMinShortfall(currentStages, activeListAll));
+      html += renderNoExcessResult(res, currentStages, targetList);
+    } else if (mode === '3') {
+      const res = solver.Solve(buildModelPenalizedExcess(currentStages, activeList));
+      html += renderPenalizedResult(res, currentStages, targetList);
+    } else {
+      const res = solver.Solve(buildModelMinRuns(currentStages, activeList));
+      html += renderMinRunsResult(res, currentStages, targetList);
+    }
+
+    resultDiv.innerHTML = html;
+  } catch (err) {
+    resultDiv.innerHTML = `<p style="color:#f88">エラー: ${err.message}</p>`;
+    console.error(err);
+  }
+
+  btn.disabled = false;
+}
+
+// ─── 初期化 ──────────────────────────────────────────────
+(function init() {
+  const stages = parseData(EQUIPMENT_RAW);
+  processData(stages);
+})();
+</script>
+</main>
+</body>
+</html>

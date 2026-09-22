@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>トリッカル 装備設計図必要量</title>
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+      color: #182b3e;
+      background: #f3f6fa;
+      font-size: 16px;
+      line-height: 1.6;
+      accent-color: #1768ce
+    }
+
+    * { box-sizing: border-box }
+    body { margin: 0 }
+
+    header {
+      background: #16324e;
+      color: white;
+      border-bottom: 4px solid #63cddd;
+      padding: 25px max(24px, calc((100vw - 1200px)/2))
+    }
+
+    header p { margin: 0; color: #a5d9e9; font-size: .875rem; letter-spacing: .12em }
+    h1 { font-size: 1.6rem; margin: 3px 0 }
+
+    main { max-width: 1248px; margin: auto; padding: 28px 24px 60px }
+
+    section {
+      background: white;
+      border: 1px solid #d8e1eb;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px
+    }
+
+    h2 { font-size: 1.15rem; margin: 0 0 14px; display: flex; align-items: center; gap: 12px }
+
+    .step {
+      font-size: .8rem;
+      background: #e5effb;
+      color: #185aa8;
+      padding: 3px 9px;
+      border-radius: 5px
+    }
+
+    .help { color: #506276; font-size: .9rem; margin: 8px 0 14px }
+
+    button {
+      font: inherit;
+      font-weight: 600;
+      border: 0;
+      border-radius: 7px;
+      background: #1768ce;
+      color: white;
+      cursor: pointer;
+      padding: 11px 22px
+    }
+
+    button:hover { background: #1256ad }
+
+    button.secondary { background: #f0f5fa; color: #1768ce; border: 1px solid #b9d0e8 }
+    button.secondary:hover { background: #e1ebf5 }
+
+    .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px }
+
+    input[type=number] {
+      font: inherit;
+      width: 68px;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      color: inherit;
+      background: white;
+      padding: 6px 8px;
+      text-align: right
+    }
+
+    input[type=text] {
+      font: inherit;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      color: inherit;
+      background: white;
+      padding: 6px 10px
+    }
+
+    input:focus-visible, button:focus-visible {
+      outline: 3px solid #84c3ff;
+      outline-offset: 2px
+    }
+
+    .table-wrap { overflow-x: auto }
+
+    table { width: 100%; border-collapse: collapse; min-width: 720px }
+
+    th {
+      background: #f0f5fa;
+      text-align: center;
+      font-size: .85rem;
+      color: #496078;
+      font-weight: 600;
+      padding: 10px 8px;
+      border-bottom: 1px solid #c6d5e3;
+      white-space: nowrap
+    }
+
+    td {
+      padding: 8px;
+      border-bottom: 1px solid #e0e8f0;
+      text-align: center;
+      white-space: nowrap
+    }
+
+    th:first-child, td:first-child { text-align: left }
+
+    tbody tr:hover { background: #f8fbff }
+
+    .grid-table input[type=number] { width: 64px }
+
+    .need-cell { font-weight: 700; color: #16324e }
+    .need-cell.zero { color: #9ba9b6; font-weight: 400 }
+    .surplus-note { display: block; font-size: .72rem; color: #2a8f5b; font-weight: 400 }
+
+    .attack-type {
+      display: inline-block;
+      min-width: 3.4em;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eaf1f8;
+      color: #344e67;
+      font-size: .8rem
+    }
+
+    .attack-type[data-type="物理"] { background: #fff0e7; color: #8a3b17 }
+    .attack-type[data-type="魔法"] { background: #eeeaff; color: #4e3b91 }
+
+    .not-owned td { color: #9ba9b6 }
+    .not-owned input:disabled { background: #f1f4f7; color: #9ba9b6 }
+
+    .filter-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 12px }
+
+    .filter-panel {
+      margin: 12px 0 16px;
+      padding: 14px 16px;
+      background: #f7faff;
+      border: 1px solid #d8e1eb;
+      border-radius: 9px
+    }
+
+    .filter-group {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr;
+      align-items: start;
+      gap: 10px;
+      margin: 8px 0
+    }
+
+    .filter-label { font-size: .9rem; color: #506276; padding-top: 7px }
+    .filter-buttons { display: flex; gap: 7px; flex-wrap: wrap }
+
+    .filter-button {
+      min-width: 42px;
+      padding: 7px 10px;
+      background: #f0f5fa;
+      color: #496078;
+      border: 1px solid #c6d5e3
+    }
+
+    .filter-button:hover { background: #e1ebf5 }
+    .filter-button[aria-pressed="true"] { background: #1768ce; color: white; border-color: #1768ce }
+
+    .filter-button,
+    .actions button {
+      padding: 4px 8px;
+      line-height: 1;
+      font-size: .95rem;
+    }
+
+    #apostle-status { font-size: .875rem; color: #506276 }
+
+    #apostle-warning {
+      border-left: 3px solid #d99623;
+      background: #fff8e9;
+      padding: 12px 18px;
+      font-size: .9rem;
+      margin-bottom: 14px;
+      border-radius: 0 6px 6px 0
+    }
+
+    #apostle-warning a { color: #185aa8 }
+
+    footer { color: #64768a; font-size: .875rem; text-align: center }
+
+    .tool-nav {
+      background: #fff;
+      border-bottom: 1px solid #d8e1eb;
+      box-shadow: 0 2px 8px rgb(22 50 78 / 8%);
+    }
+
+    .tool-nav-inner {
+      max-width: 1248px;
+      margin: auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: stretch;
+      overflow-x: auto;
+    }
+
+    .tool-nav-brand {
+      flex: 0 0 auto;
+      align-self: center;
+      margin-right: 18px;
+      color: #16324e;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .tool-nav a {
+      flex: 0 0 auto;
+      padding: 12px 14px 10px;
+      border-bottom: 3px solid transparent;
+      color: #506276;
+      font-size: .9rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .tool-nav a:hover { background: #f3f8fd; color: #1768ce }
+    .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff }
+
+    .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px }
+
+    @media(max-width:700px) {
+      main { padding: 18px 12px }
+      header { padding: 18px 16px }
+      section { padding: 18px 14px }
+      .tool-nav-inner { padding: 0 12px }
+      .tool-nav-brand { margin-right: 8px }
+
+      .filter-group { grid-template-columns: 1fr; gap: 3px }
+      .filter-label { padding-top: 0 }
+    }
+
+    @media(max-width:420px) {
+      .filter-button,
+      .actions button { padding: 3px 6px }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <p>TRICKCAL / EQUIPMENT CALCULATOR</p>
+    <h1>装備・設計図必要量計算</h1>
+  </header>
+  <nav class="tool-nav" aria-label="ツール間の移動">
+    <div class="tool-nav-inner">
+      <span class="tool-nav-brand">TRICKCAL TOOLS</span>
+      <a href="apostle_equipment.html">装備管理</a>
+      <a href="equipment_calc.html" aria-current="page">必要量計算</a>
+      <a href="equipment_planner.html">周回計画</a>
+    </div>
+  </nav>
+  <main>
+    <section aria-labelledby="s01-title">
+      <h2 id="s01-title"><span class="step">01</span>各装備の必要数</h2>
+      <p class="help">装備の種類×ランクごとに「その段階まで強化する必要がある装備の個数」を表します。03からのインポートでは、対象使徒ごとに現在ランクから目標ランクまでの6部位を合計します。数値は自由に手動調整できます。</p>
+      <div class="actions">
+        <button id="importFromApostlesBtn">03の目標データをインポート（上書き）</button>
+        <button class="secondary" id="resetReq01Btn">01をすべて0にリセット</button>
+      </div>
+      <div class="actions" aria-label="01の装備表示順">
+        <label><input type="radio" name="req01Order" value="bag"> 装備の並びをバッグ内の順序と一致させる</label>
+        <label><input type="radio" name="req01Order" value="clockwise" checked> 装備を時計まわりに表示させる</label>
+      </div>
+      <div class="table-wrap">
+        <table class="grid-table" id="req01-table"></table>
+      </div>
+    </section>
+
+    <section aria-labelledby="s02-title">
+      <h2 id="s02-title"><span class="step">02</span>装備設計図の必要数および保有数</h2>
+      <p class="help">記入欄に保有数を入力してください。（ここに限らず）入力は自動で保存されます。</p>
+      <p class="help">太字で表視されているのは、01の必要装備数から計算した装備設計図の必要数から保有数を引いた値です。</p>
+      <div class="actions" aria-label="02の装備表示順">
+        <label><input type="radio" name="req02Order" value="bag" checked> 装備の並びをバッグ内の順序と一致させる</label>
+        <label><input type="radio" name="req02Order" value="clockwise"> 装備を時計まわりに表示させる</label>
+      </div>
+      <div class="table-wrap">
+        <table class="grid-table" id="req02-table"></table>
+      </div>
+    </section>
+
+    <section aria-labelledby="s03-title">
+      <h2 id="s03-title"><span class="step">03</span>使徒の装備ランクの目標値</h2>
+      <p class="help">同じフォルダーの <a href="apostle_equipment.html">apostle_equipment.html</a>
+        に保存された使徒データ（所有状況・現在の装備ランク）を読み込みます。使徒ごとに目標ランクと、計算の対象にするかどうかのチェックボックスを設定してください。</p>
+      <div id="apostle-warning" hidden></div>
+      <div class="actions">
+        <button class="secondary" id="reloadApostlesBtn">使徒データを再読み込み</button>
+        <span id="apostle-status"></span>
+      </div>
+      <label><input type="checkbox" id="includeUnownedInImport"> 未所持使徒も装備集めの対象としてインポートする</label>
+      <p class="help">同じ項目内は複数候補のいずれか、異なる項目間はすべてに一致する使徒を表示します。</p>
+      <div class="filter-panel" aria-label="使徒の絞り込み">
+        <div class="filter-group"><span class="filter-label">頭文字</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="ア" aria-pressed="false">ア</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="カ" aria-pressed="false">カ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="サ" aria-pressed="false">サ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="タ" aria-pressed="false">タ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="ナ" aria-pressed="false">ナ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="ハ" aria-pressed="false">ハ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="マ" aria-pressed="false">マ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="ヤ" aria-pressed="false">ヤ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="ラ" aria-pressed="false">ラ</button><button type="button" class="filter-button" data-filter-category="kana" data-filter-value="ワ" aria-pressed="false">ワ</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">初期レアリティ</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="rarity" data-filter-value="1" aria-pressed="false">★1</button><button type="button" class="filter-button" data-filter-category="rarity" data-filter-value="2" aria-pressed="false">★2</button><button type="button" class="filter-button" data-filter-category="rarity" data-filter-value="3" aria-pressed="false">★3</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">性格</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="personality" data-filter-value="純粋" aria-pressed="false">純粋</button><button type="button" class="filter-button" data-filter-category="personality" data-filter-value="冷静" aria-pressed="false">冷静</button><button type="button" class="filter-button" data-filter-category="personality" data-filter-value="狂気" aria-pressed="false">狂気</button><button type="button" class="filter-button" data-filter-category="personality" data-filter-value="活発" aria-pressed="false">活発</button><button type="button" class="filter-button" data-filter-category="personality" data-filter-value="憂鬱" aria-pressed="false">憂鬱</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">タイプ</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="role" data-filter-value="守備" aria-pressed="false">守備</button><button type="button" class="filter-button" data-filter-category="role" data-filter-value="攻撃" aria-pressed="false">攻撃</button><button type="button" class="filter-button" data-filter-category="role" data-filter-value="支援" aria-pressed="false">支援</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">配置</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="position" data-filter-value="前列" aria-pressed="false">前列</button><button type="button" class="filter-button" data-filter-category="position" data-filter-value="中列" aria-pressed="false">中列</button><button type="button" class="filter-button" data-filter-category="position" data-filter-value="後列" aria-pressed="false">後列</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">種族</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="race" data-filter-value="妖精" aria-pressed="false">妖精</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="獣人" aria-pressed="false">獣人</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="エルフ" aria-pressed="false">エルフ</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="精霊" aria-pressed="false">精霊</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="幽霊" aria-pressed="false">幽霊</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="竜族" aria-pressed="false">竜族</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="魔女" aria-pressed="false">魔女</button><button type="button" class="filter-button" data-filter-category="race" data-filter-value="???" aria-pressed="false">???</button></div>
+        </div>
+        <div class="filter-group"><span class="filter-label">攻撃タイプ</span>
+          <div class="filter-buttons"><button type="button" class="filter-button" data-filter-category="attackType" data-filter-value="物理" aria-pressed="false">物理</button><button type="button" class="filter-button" data-filter-category="attackType" data-filter-value="魔法" aria-pressed="false">魔法</button></div>
+        </div>
+      </div>
+      <div class="filter-row">
+        <label><input type="checkbox" id="showUnowned"> 未所有の使徒も表示</label>
+      </div>
+      <div class="filter-row">
+        <button class="secondary" id="selectAllBtn">表示中を全て対象にする</button>
+        <button class="secondary" id="deselectAllBtn">表示中を全て対象外にする</button>
+        <label>一括目標ランク：
+          <input type="number" id="bulkTargetRank" min="2" max="9" step="1" value="9">
+        </label>
+        <button id="applyBulkBtn">対象の使徒に一括適用</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>対象</th>
+              <th>使徒名</th>
+              <th>属性</th>
+              <th>装備部位</th>
+              <th>現在ランク</th>
+              <th>目標ランク</th>
+            </tr>
+          </thead>
+          <tbody id="apostle-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <footer>入力内容はこのブラウザーに <code>trickcal_equipment_plan</code> として自動保存されます。</footer>
+
+  <script>
+    'use strict';
+
+    const ITEM_TYPES = ['物理武器', '魔法武器', '鎧', '帽子', '煌めく装飾品', 'ブーツ', '華麗な装飾品'];
+    const EMOJI_TYPES = ['⚔️', '🪄', '👕', '🎩', '💍', '👢', '📿'];
+    const BAG_ORDER = [0, 1, 2, 3, 5, 4, 6];
+    const CLOCKWISE_ORDER = [0, 1, 2, 3, 4, 5, 6];
+    const NON_WEAPON_TYPES = ITEM_TYPES.filter(t => !t.endsWith('武器'));
+    const MIN_RANK = 2;
+    const MAX_RANK = 9;
+
+    // 装備1個をランクXまで強化するのに必要な設計図数（ランクごと。種類によらず共通）
+    const RECIPE = {
+      9: { 9: 52, 8: 20 },
+      8: { 8: 46, 7: 18 },
+      7: { 7: 42 },
+      6: { 6: 36, 5: 14 },
+      5: { 5: 30, 4: 12 },
+      4: { 4: 20 },
+      3: { 3: 18, 2: 8 },
+      2: { 2: 10 },
+    };
+
+    const APOSTLE_STORAGE_KEY = 'apostle_equipment';
+    const SELF_STORAGE_KEY = 'trickcal_equipment_plan';
+
+    const getTypeLabel = i => `${EMOJI_TYPES[i]} ${ITEM_TYPES[i]}`;
+
+    // ─── 自ツールの状態の保存・復元 ─────────────────────────
+    let selfState = {
+      req01: {}, own02: {}, apostleTargets: {}, includeUnownedInImport: false,
+      req01Order: 'clockwise', req02Order: 'bag'
+    };
+
+    function loadSelfState() {
+      try {
+        const raw = localStorage.getItem(SELF_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          selfState.req01 = parsed.req01 && typeof parsed.req01 === 'object' ? parsed.req01 : {};
+          selfState.own02 = parsed.own02 && typeof parsed.own02 === 'object' ? parsed.own02 : {};
+          selfState.apostleTargets = parsed.apostleTargets && typeof parsed.apostleTargets === 'object' ? parsed.apostleTargets : {};
+          selfState.includeUnownedInImport = parsed.includeUnownedInImport === true;
+          selfState.req01Order = parsed.req01Order === 'bag' ? 'bag' : 'clockwise';
+          selfState.req02Order = parsed.req02Order === 'clockwise' ? 'clockwise' : 'bag';
+        }
+      } catch { /* 保存データが読めない場合は初期状態のまま */ }
+    }
+
+    function saveSelfState() {
+      try { localStorage.setItem(SELF_STORAGE_KEY, JSON.stringify(selfState)); } catch { /* 保存できなければ無視 */ }
+    }
+
+    function getDisplayOrder(section) {
+      return (section === 'req01' ? selfState.req01Order : selfState.req02Order) === 'bag'
+        ? BAG_ORDER : CLOCKWISE_ORDER;
+    }
+
+    // ─── 01: 各装備の必要数グリッド ─────────────────────────
+    function reqKey(i, r) { return `${i}_${r}`; }
+    function getReq01(i, r) { return parseFloat(selfState.req01[reqKey(i, r)]) || 0; }
+    function setReq01(i, r, v) { selfState.req01[reqKey(i, r)] = Math.max(0, Math.round(v) || 0); }
+
+    function renderReq01Table() {
+      const table = document.getElementById('req01-table');
+      let h = '<thead><tr><th>装備ランク</th>';
+      getDisplayOrder('req01').forEach(i => { h += `<th>${getTypeLabel(i)}</th>`; });
+      h += '</tr></thead><tbody>';
+      for (let r = MAX_RANK; r >= MIN_RANK; r--) {
+        h += `<tr><td>Rank ${r}</td>`;
+        getDisplayOrder('req01').forEach(i => {
+          h += `<td><input type="number" min="0" step="1" id="req01_${i}_${r}" value="${getReq01(i, r)}"></td>`;
+        });
+        h += '</tr>';
+      }
+      h += '</tbody>';
+      table.innerHTML = h;
+      ITEM_TYPES.forEach((t, i) => {
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) {
+          const el = document.getElementById(`req01_${i}_${r}`);
+          el.addEventListener('input', () => {
+            setReq01(i, r, el.value);
+            saveSelfState();
+            renderReq02Table();
+          });
+        }
+      });
+    }
+
+    document.getElementById('resetReq01Btn').addEventListener('click', () => {
+      ITEM_TYPES.forEach((t, i) => { for (let r = MIN_RANK; r <= MAX_RANK; r++) setReq01(i, r, 0); });
+      saveSelfState();
+      renderReq01Table();
+      renderReq02Table();
+    });
+
+    // ─── 02: 装備設計図の必要数・保有数グリッド ─────────────
+    function ownKey(i, r) { return `${i}_${r}`; }
+    function getOwn02(i, r) { return parseFloat(selfState.own02[ownKey(i, r)]) || 0; }
+    function setOwn02(i, r, v) { selfState.own02[ownKey(i, r)] = Math.max(0, Math.round(v) || 0); }
+
+    // 01の必要装備数から、ランクごとの必要設計図の総数を逆算する
+    function computeBlueprintTotals() {
+      const totals = {};
+      ITEM_TYPES.forEach((t, i) => {
+        totals[i] = {};
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) totals[i][r] = 0;
+      });
+      ITEM_TYPES.forEach((t, i) => {
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) {
+          const count = getReq01(i, r);
+          const recipe = RECIPE[r];
+          if (!count || !recipe) continue;
+          for (const [bpRankStr, amount] of Object.entries(recipe)) {
+            const bpRank = parseInt(bpRankStr, 10);
+            totals[i][bpRank] += amount * count;
+          }
+        }
+      });
+      return totals;
+    }
+
+    function renderReq02Table() {
+      const totals = computeBlueprintTotals();
+      const table = document.getElementById('req02-table');
+      let h = '<thead><tr><th>設計図ランク</th>';
+      getDisplayOrder('req02').forEach(i => { h += `<th>${getTypeLabel(i)}</th>`; });
+      h += '</tr></thead><tbody>';
+      for (let r = MAX_RANK; r >= MIN_RANK; r--) {
+        h += `<tr><td>Rank ${r}</td>`;
+        getDisplayOrder('req02').forEach(i => {
+          const total = totals[i][r];
+          const owned = getOwn02(i, r);
+          const need = total - owned;
+          h += `<td>
+            <span class="need-cell${need === 0 ? ' zero' : ''}" id="need02_${i}_${r}">${need}</span>
+            <div><input type="number" min="0" step="1" id="own02_${i}_${r}" value="${owned}" title="保有数（自由に調整可）"></div>
+          </td>`;
+        });
+        h += '</tr>';
+      }
+      h += '</tbody>';
+      table.innerHTML = h;
+      ITEM_TYPES.forEach((t, i) => {
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) {
+          const el = document.getElementById(`own02_${i}_${r}`);
+          el.addEventListener('input', () => {
+            setOwn02(i, r, el.value);
+            saveSelfState();
+            const needEl = document.getElementById(`need02_${i}_${r}`);
+            const need = totals[i][r] - getOwn02(i, r);
+            needEl.textContent = need;
+            needEl.classList.toggle('zero', need === 0);
+          });
+        }
+      });
+    }
+
+    // ─── 03: 使徒の装備ランクの目標値 ─────────────────────
+    let apostleList = [];
+    const KANA_GROUPS = {
+      ア: 'アイウエオァィゥェォヴ', カ: 'カキクケコガギグゲゴ', サ: 'サシスセソザジズゼゾ',
+      タ: 'タチツテトダヂヅデド', ナ: 'ナニヌネノ', ハ: 'ハヒフヘホバビブベボパピプペポ',
+      マ: 'マミムメモ', ヤ: 'ヤユヨャュョ', ラ: 'ラリルレロ', ワ: 'ワヲン',
+    };
+    const FILTER_CATEGORIES = ['kana', 'rarity', 'personality', 'role', 'position', 'race', 'attackType'];
+    const activeFilters = Object.fromEntries(FILTER_CATEGORIES.map(category => [category, new Set()]));
+
+    function normalizeApostleRecord(record, idx) {
+      if (!record || typeof record !== 'object' || typeof record.name !== 'string' || !record.name) return null;
+      const owned = record.owned === true;
+      const rankNum = parseInt(record.rank, 10);
+      const currentRank = owned && Number.isFinite(rankNum) && rankNum > 0 ? rankNum : 0;
+      const attackType = record.attackType === '物理' || record.attackType === '魔法' ? record.attackType : '';
+      const equipment = record.equipment && typeof record.equipment === 'object' ? record.equipment : {};
+      const slots = [];
+      if (attackType === '物理' && equipment['物理武器']) slots.push('物理武器');
+      if (attackType === '魔法' && equipment['魔法武器']) slots.push('魔法武器');
+      for (const t of NON_WEAPON_TYPES) if (equipment[t]) slots.push(t);
+      const id = typeof record.sourceId === 'string' && record.sourceId ? record.sourceId : `name_${record.name}_${idx}`;
+      return {
+        id, name: record.name, owned, currentRank, attackType, slots,
+        initialRarity: record.initialRarity, personality: record.personality, role: record.role,
+        position: record.position, race: record.race,
+      };
+    }
+
+    function loadApostleList() {
+      const warningBox = document.getElementById('apostle-warning');
+      let raw;
+      try { raw = localStorage.getItem(APOSTLE_STORAGE_KEY); }
+      catch {
+        warningBox.hidden = false;
+        warningBox.textContent = 'ブラウザーの保存領域を読み込めませんでした。設定を確認してください。';
+        return [];
+      }
+      if (!raw) {
+        warningBox.hidden = false;
+        warningBox.innerHTML = 'apostle_equipment.html の保存データが見つかりません。先に <a href="apostle_equipment.html">apostle_equipment.html</a> を開いて使徒データを登録・保存してから、このページで「使徒データを再読み込み」を押してください。';
+        return [];
+      }
+      try {
+        const saved = JSON.parse(raw);
+        if (!saved || typeof saved !== 'object' || saved.schema !== APOSTLE_STORAGE_KEY || saved.version !== 1
+          || !Array.isArray(saved.registered) || !Array.isArray(saved.unknown)) {
+          throw new Error('unsupported schema');
+        }
+        const all = [...saved.registered, ...saved.unknown];
+        const list = all.map((r, idx) => normalizeApostleRecord(r, idx)).filter(Boolean);
+        warningBox.hidden = true;
+        warningBox.textContent = '';
+        return list;
+      } catch {
+        warningBox.hidden = false;
+        warningBox.textContent = 'apostle_equipment.html の保存データを解析できませんでした。';
+        return [];
+      }
+    }
+
+    function ensureApostleTargetState(list) {
+      let changed = false;
+      for (const a of list) {
+        if (!selfState.apostleTargets[a.id]) {
+          selfState.apostleTargets[a.id] = {
+            active: a.owned,
+            targetRank: a.currentRank > 0 ? a.currentRank : MIN_RANK,
+          };
+          changed = true;
+        }
+      }
+      if (changed) saveSelfState();
+    }
+
+    function kanaGroupFor(name) {
+      const first = String(name || '').trim().charAt(0);
+      return Object.keys(KANA_GROUPS).find(group => KANA_GROUPS[group].includes(first)) || '';
+    }
+
+    function recordMatchesFilters(a) {
+      const values = {
+        kana: kanaGroupFor(a.name), rarity: String(a.initialRarity), personality: a.personality,
+        role: a.role, position: a.position, race: a.race, attackType: a.attackType,
+      };
+      return FILTER_CATEGORIES.every(category =>
+        activeFilters[category].size === 0 || activeFilters[category].has(values[category]));
+    }
+
+    function updateFilterButtons() {
+      document.querySelectorAll('[data-filter-category]').forEach(button => {
+        const selected = activeFilters[button.dataset.filterCategory].has(button.dataset.filterValue);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+
+    function isRowVisible(a) {
+      const showUnowned = document.getElementById('showUnowned').checked;
+      if (!showUnowned && !a.owned) return false;
+      return recordMatchesFilters(a);
+    }
+
+    function renderApostleTable() {
+      const tbody = document.getElementById('apostle-body');
+      tbody.innerHTML = '';
+      let visibleCount = 0, activeCount = 0;
+      for (const a of apostleList) {
+        if (!isRowVisible(a)) continue;
+        visibleCount++;
+        const st = selfState.apostleTargets[a.id];
+        if (st.active) activeCount++;
+        const tr = document.createElement('tr');
+        if (!a.owned) tr.className = 'not-owned';
+
+        const tdActive = document.createElement('td');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!st.active;
+        cb.setAttribute('aria-label', `${a.name}を計算対象にする`);
+        cb.addEventListener('change', () => { st.active = cb.checked; saveSelfState(); });
+        tdActive.appendChild(cb);
+        tr.appendChild(tdActive);
+
+        const tdName = document.createElement('td');
+        tdName.textContent = a.name;
+        tr.appendChild(tdName);
+
+        const tdType = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = 'attack-type';
+        badge.dataset.type = a.attackType || '';
+        badge.textContent = a.attackType || '―';
+        tdType.appendChild(badge);
+        tr.appendChild(tdType);
+
+        const tdSlots = document.createElement('td');
+        tdSlots.textContent = a.slots.length
+          ? a.slots.map(t => EMOJI_TYPES[ITEM_TYPES.indexOf(t)]).join(' ')
+          : '―';
+        tr.appendChild(tdSlots);
+
+        const tdCurrent = document.createElement('td');
+        tdCurrent.textContent = a.owned && a.currentRank > 0 ? a.currentRank : '―';
+        tr.appendChild(tdCurrent);
+
+        const tdTarget = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.min = String(MIN_RANK);
+        input.max = String(MAX_RANK);
+        input.step = '1';
+        input.value = st.targetRank;
+        input.disabled = !a.owned && !selfState.includeUnownedInImport;
+        input.setAttribute('aria-label', `${a.name}の目標ランク`);
+        input.addEventListener('input', () => {
+          st.targetRank = parseInt(input.value, 10) || 0;
+          saveSelfState();
+        });
+        tdTarget.appendChild(input);
+        tr.appendChild(tdTarget);
+
+        tbody.appendChild(tr);
+      }
+      document.getElementById('apostle-status').textContent =
+        `${visibleCount}人を表示 / ${apostleList.filter(a => a.owned).length}人を所有 / ${activeCount}人を対象中`;
+    }
+
+    function reloadApostleData() {
+      apostleList = loadApostleList();
+      ensureApostleTargetState(apostleList);
+      renderApostleTable();
+    }
+
+    document.getElementById('reloadApostlesBtn').addEventListener('click', reloadApostleData);
+    const includeUnownedInImport = document.getElementById('includeUnownedInImport');
+    includeUnownedInImport.checked = selfState.includeUnownedInImport;
+    includeUnownedInImport.addEventListener('change', () => {
+      selfState.includeUnownedInImport = includeUnownedInImport.checked;
+      saveSelfState();
+      renderApostleTable();
+    });
+    document.querySelectorAll('[data-filter-category]').forEach(button => {
+      button.addEventListener('click', () => {
+        const selected = activeFilters[button.dataset.filterCategory];
+        const value = button.dataset.filterValue;
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        updateFilterButtons();
+        renderApostleTable();
+      });
+    });
+    document.getElementById('showUnowned').addEventListener('change', renderApostleTable);
+
+    document.getElementById('selectAllBtn').addEventListener('click', () => {
+      for (const a of apostleList) {
+        if (!a.owned || !isRowVisible(a)) continue;
+        selfState.apostleTargets[a.id].active = true;
+      }
+      saveSelfState();
+      renderApostleTable();
+    });
+
+    document.getElementById('deselectAllBtn').addEventListener('click', () => {
+      for (const a of apostleList) {
+        if (!isRowVisible(a)) continue;
+        selfState.apostleTargets[a.id].active = false;
+      }
+      saveSelfState();
+      renderApostleTable();
+    });
+
+    document.getElementById('applyBulkBtn').addEventListener('click', () => {
+      const val = Math.max(MIN_RANK, Math.min(MAX_RANK, parseInt(document.getElementById('bulkTargetRank').value, 10) || MIN_RANK));
+      for (const a of apostleList) {
+        if (!a.owned) continue;
+        const st = selfState.apostleTargets[a.id];
+        if (!st.active) continue;
+        st.targetRank = val;
+      }
+      saveSelfState();
+      renderApostleTable();
+    });
+
+    // ─── 01への03データのインポート ─────────────────────
+    function computeImportGrid() {
+      const grid = {};
+      ITEM_TYPES.forEach((t, i) => {
+        grid[i] = {};
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) grid[i][r] = 0;
+      });
+      for (const a of apostleList) {
+        const st = selfState.apostleTargets[a.id];
+        if (!st || !st.active || (!a.owned && !selfState.includeUnownedInImport)) continue;
+        const target = st.targetRank;
+        if (!target || target < MIN_RANK) continue;
+        const weaponType = a.attackType ? `${a.attackType}武器` : a.slots.find(type => type.endsWith('武器'));
+        if (!weaponType) continue;
+        const start = Math.max(MIN_RANK, a.currentRank);
+        const requiredTypes = [weaponType, ...NON_WEAPON_TYPES];
+        for (const type of requiredTypes) {
+          const i = ITEM_TYPES.indexOf(type);
+          if (i === -1) continue;
+          for (let r = start; r <= target; r++) grid[i][r]++;
+        }
+      }
+      return grid;
+    }
+
+    document.getElementById('importFromApostlesBtn').addEventListener('click', () => {
+      const grid = computeImportGrid();
+      ITEM_TYPES.forEach((t, i) => {
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) setReq01(i, r, grid[i][r]);
+      });
+      saveSelfState();
+      renderReq01Table();
+      renderReq02Table();
+    });
+
+    // ─── 初期化 ──────────────────────────────────────────
+    (function init() {
+      loadSelfState();
+      document.querySelector(`input[name="req01Order"][value="${selfState.req01Order}"]`).checked = true;
+      document.querySelector(`input[name="req02Order"][value="${selfState.req02Order}"]`).checked = true;
+      document.querySelectorAll('input[name="req01Order"]').forEach(input => {
+        input.addEventListener('change', () => {
+          if (!input.checked) return;
+          selfState.req01Order = input.value;
+          saveSelfState();
+          renderReq01Table();
+        });
+      });
+      document.querySelectorAll('input[name="req02Order"]').forEach(input => {
+        input.addEventListener('change', () => {
+          if (!input.checked) return;
+          selfState.req02Order = input.value;
+          saveSelfState();
+          renderReq02Table();
+        });
+      });
+      renderReq01Table();
+      renderReq02Table();
+      reloadApostleData();
+    })();
+  </script>
+</body>
+
+</html>
