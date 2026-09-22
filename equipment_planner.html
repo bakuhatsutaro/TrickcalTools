@@ -1342,10 +1342,22 @@ function runCalc() {
 }
 
 // ─── 初期化 ──────────────────────────────────────────────
-(function init() {
-  const stages = parseData(EQUIPMENT_RAW);
-  processData(stages);
-})();
+async function init() {
+  try {
+    const response = await fetch('equipment.txt');
+    if (!response.ok) throw new Error(`equipment.txt の読み込みに失敗しました (${response.status})`);
+
+    const stages = parseData(await response.text());
+    if (stages.length === 0) throw new Error('equipment.txt に有効な装備データがありません。');
+    processData(stages);
+  } catch (err) {
+    document.getElementById('calcResult').innerHTML =
+      '<p style="color:#f88">装備データを読み込めませんでした。ローカル HTTP サーバー経由で開いてください。</p>';
+    console.error(err);
+  }
+}
+
+init();
 </script>
 </main>
 </body>
