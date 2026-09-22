@@ -459,6 +459,22 @@
       flex-wrap: wrap
     }
 
+    .bulk-ownership-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px
+    }
+
+    .bulk-ownership-actions button {
+      padding: 7px 10px;
+      background: #42566e
+    }
+
+    .bulk-ownership-actions button:hover {
+      background: #31445b
+    }
+
     .filter-button {
       min-width: 42px;
       padding: 7px 10px;
@@ -683,10 +699,14 @@
               data-filter-value="物理" aria-pressed="false">物理</button><button type="button" class="filter-button"
               data-filter-category="attackType" data-filter-value="魔法" aria-pressed="false">魔法</button></div>
         </div>
+        <div class="bulk-ownership-actions">
+          <button type="button" id="mark-visible-owned">表示中の使徒を全員所持にする</button>
+          <button type="button" id="mark-visible-unowned">表示中の使徒を全員非所持にする</button>
+        </div>
       </div>
       <div class="table-wrap" id="table-wrap">
         <table>
-          <caption class="help">登録済み使徒と装備状況</caption>
+          <caption class="help">使徒と装備状況</caption>
           <thead id="table-head"></thead>
           <tbody id="table-body"></tbody>
         </table>
@@ -1032,6 +1052,19 @@
         renderRecords();
       });
     });
+
+    function setVisibleOwnership(owned) {
+      const visibleRecords = registeredRecords.filter(recordMatchesFilters);
+      if (visibleRecords.length === 0) return;
+      const action = owned ? '所持' : '非所持';
+      if (!confirmAction(`表示中の${visibleRecords.length}人を全員${action}にします。よろしいですか？`)) return;
+      visibleRecords.forEach(record => { record.owned = owned; });
+      saveState();
+      renderRecords();
+    }
+
+    document.getElementById('mark-visible-owned').addEventListener('click', () => setVisibleOwnership(true));
+    document.getElementById('mark-visible-unowned').addEventListener('click', () => setVisibleOwnership(false));
 
     function confirmAction(message) {
       return document.getElementById('skip-confirm').checked || window.confirm(message);
