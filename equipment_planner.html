@@ -813,7 +813,7 @@ function buildTargetInputs(minRank, maxRank) {
   h += '<p style="font-size:0.8rem;color:#889;margin:18px 0 10px">※ ここで非表示にしたランクの装備設計図は0として計算されます。</p>';
 
   h += '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px">';
-  for (let r = minRank; r <= maxRank; r++) {
+  for (let r = maxRank; r >= minRank; r--) {
     h += `<button type="button" class="rank-toggle on" id="rankVis_${r}" data-on="true" onclick="onRankVisChange(${r})">Rank${r}</button>`;
   }
   h += '</div>';
@@ -822,7 +822,7 @@ function buildTargetInputs(minRank, maxRank) {
   h += '<th style="text-align:left">装備ランク</th>';
   ITEM_TYPES.forEach((t, i) => { h += `<th id="typeLabel_${i}">${getTypeLabel(i)}</th>`; });
   h += '</tr></thead><tbody>';
-  for (let r = minRank; r <= maxRank; r++) {
+  for (let r = maxRank; r >= minRank; r--) {
     h += `<tr id="rankRow_${r}"><td style="text-align:left">Rank ${r}</td>`;
     ITEM_TYPES.forEach((t, i) => {
       const def = r === maxRank ? DEFAULT_TARGETS[i] : (r === maxRank - 1 ? DEFAULT_MIN8[i] : 0);
