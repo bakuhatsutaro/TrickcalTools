@@ -762,7 +762,11 @@
         for (const type of requiredTypes) {
           const i = ITEM_TYPES.indexOf(type);
           if (i === -1) continue;
-          for (let r = start; r <= target; r++) grid[i][r]++;
+          const hasCurrentRankEquipment = a.slots.includes(type);
+          for (let r = start; r <= target; r++) {
+            if (r === a.currentRank && hasCurrentRankEquipment) continue;
+            grid[i][r]++;
+          }
         }
       }
       return grid;
