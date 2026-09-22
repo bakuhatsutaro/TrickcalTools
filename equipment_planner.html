@@ -345,10 +345,13 @@
 </nav>
 <main>
 
+<div class="card" style="border-left:4px solid #63cddd">
+  <p style="font-size:0.9rem;color:#506276;line-height:1.7">まず<a href="equipment_calc.html">必要量計算</a>で装備の必要数を設定することを強くお勧めします。使徒データに基づいて必要数を計算したい場合は<a href="apostle_equipment.html">装備管理</a>から使徒の装備データを追加してください。</p>
+</div>
+
 <!-- Target counts -->
 <div class="card">
   <h2 data-step="01">必要個数入力</h2>
-  <p style="font-size:0.8rem;color:#889;margin-bottom:8px">※ OFFにしたランクの必要量は0として計算されます。</p>
   <div id="targetsGrid"></div>
 </div>
 
@@ -803,10 +806,11 @@ function buildTargetInputs(minRank, maxRank) {
   // リセットボタン（この表内の数値入力をすべて0にします）
   let h = '';
   h += '<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">';
+  h += '<button type="button" onclick="importEquipmentCalc()" style="background:#2a3a5a;color:#89c4f4;border:1px solid #4a6aaa;padding:6px 12px;border-radius:6px;cursor:pointer">必要量計算の結果をインポート</button>';
   h += '<button type="button" onclick="resetTargets()" style="background:#552a2a;color:#ffd;border:1px solid #773333;padding:6px 12px;border-radius:6px;cursor:pointer">リセット</button>';
-  h += '<button type="button" onclick="importEquipmentCalc()" style="background:#2a3a5a;color:#89c4f4;border:1px solid #4a6aaa;padding:6px 12px;border-radius:6px;cursor:pointer">equipment_calcからインポート</button>';
-  h += '<span style="font-size:0.85rem;color:#889">どちらもこの表の数値を上書きします</span>';
+  h += '<span style="font-size:0.85rem;color:#889">どちらも現在の数値は消去されます</span>';
   h += '</div>';
+  h += '<p style="font-size:0.8rem;color:#889;margin:18px 0 10px">※ OFFにしたランクの必要量は0として計算されます。</p>';
 
   h += '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px">';
   for (let r = minRank; r <= maxRank; r++) {
