@@ -304,8 +304,7 @@
 
     <section aria-labelledby="s03-title">
       <h2 id="s03-title"><span class="step">03</span>使徒の装備ランクの目標値</h2>
-      <p class="help">同じフォルダーの <a href="apostle_equipment.html">apostle_equipment.html</a>
-        に保存された使徒データ（所有状況・現在の装備ランク）を読み込みます。使徒ごとに目標ランクと、計算の対象にするかどうかのチェックボックスを設定してください。</p>
+      <p class="help"><a href="apostle_equipment.html"><strong>装備管理</strong></a>に保存された使徒データ（所有状況・現在の装備ランク）を読み込みます。使徒ごとに目標ランクと、計算の対象にするかどうかのチェックボックスを設定してください。</p>
       <div id="apostle-warning" hidden></div>
       <div class="actions">
         <button class="secondary" id="reloadApostlesBtn">使徒データを再読み込み</button>
@@ -351,10 +350,10 @@
         <table>
           <thead>
             <tr>
-              <th>対象</th>
+              <th>計算に含む</th>
               <th>使徒名</th>
-              <th>属性</th>
-              <th>装備部位</th>
+              <th>武器タイプ</th>
+              <th>装着済みの装備</th>
               <th>現在ランク</th>
               <th>目標ランク</th>
             </tr>
@@ -565,7 +564,7 @@
       }
       if (!raw) {
         warningBox.hidden = false;
-        warningBox.innerHTML = 'apostle_equipment.html の保存データが見つかりません。先に <a href="apostle_equipment.html">apostle_equipment.html</a> を開いて使徒データを登録・保存してから、このページで「使徒データを再読み込み」を押してください。';
+        warningBox.innerHTML = 'apostle_equipment.html の保存データが見つかりません。先に<a href="apostle_equipment.html"><strong>装備管理</strong></a>を開いて使徒データを登録・保存してから、このページで「使徒データを再読み込み」を押してください。';
         return [];
       }
       try {
