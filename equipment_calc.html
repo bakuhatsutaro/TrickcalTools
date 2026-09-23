@@ -120,6 +120,8 @@
     tbody tr:hover { background: #f8fbff }
 
     .grid-table input[type=number] { width: 64px }
+    #req01-table th { padding: 5px 8px }
+    #req01-table td { padding: 3px 8px }
 
     .need-cell { font-weight: 700; color: #16324e }
     .need-cell.zero { color: #9ba9b6; font-weight: 400 }
@@ -174,7 +176,7 @@
     .filter-button[aria-pressed="true"] { background: #1768ce; color: white; border-color: #1768ce }
 
     .filter-button,
-    .actions button {
+    .filter-row button {
       padding: 4px 8px;
       line-height: 1;
       font-size: .95rem;
@@ -249,7 +251,7 @@
 
     @media(max-width:420px) {
       .filter-button,
-      .actions button { padding: 3px 6px }
+      .filter-row button { padding: 3px 6px }
     }
   </style>
 </head>
@@ -273,8 +275,9 @@
       <h2 id="s01-title"><span class="step">01</span>各装備の必要数</h2>
       <p class="help">装備の種類×ランクごとに「その段階まで強化する必要がある装備の個数」を表します。03からのインポートでは、対象使徒ごとに現在ランクから目標ランクまでの6部位を合計します。数値は自由に手動調整できます。</p>
       <div class="actions">
-        <button id="importFromApostlesBtn">03の目標データをインポート（上書き）</button>
-        <button class="secondary" id="resetReq01Btn">01をすべて0にリセット</button>
+        <button id="importFromApostlesBtn">使徒データから読み込み</button>
+        <button class="secondary" id="resetReq01Btn">装備必要量を0にリセット</button>
+        <p class="help">使徒データ(03)は下に表示されています。ボタンを押すとデータは上書きされます。</p>
       </div>
       <div class="actions" aria-label="01の装備表示順">
         <label><input type="radio" name="req01Order" value="bag"> 装備の並びをバッグ内の順序と一致させる</label>
