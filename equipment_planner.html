@@ -362,16 +362,16 @@
   <p style="font-size:0.85rem;color:#889;margin-bottom:10px">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
   <div id="calcModeGrid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-      <input type="radio" name="calcMode" value="1" checked onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">通常モード</b>（余りを許容） — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
+      <input type="radio" name="calcMode" value="normal" checked onchange="onCalcModeChange()" style="margin-top:3px">
+      <span><b style="color:#16324e">通常モード</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
     </label>
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-      <input type="radio" name="calcMode" value="2" onchange="onCalcModeChange()" style="margin-top:3px">
+      <input type="radio" name="calcMode" value="advanced" onchange="onCalcModeChange()" style="margin-top:3px">
+      <span><b style="color:#16324e">詳細モード</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
+    </label>
+    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
+      <input type="radio" name="calcMode" value="no-extra" onchange="onCalcModeChange()" style="margin-top:3px">
       <span><b style="color:#16324e">余り禁止モード</b> — 余りを一切許容せず、要求数にできるだけ近づく周回数を計算します。要求数に届かない場合はその内容を表示します。</span>
-    </label>
-    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-      <input type="radio" name="calcMode" value="3" onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">詳細モード</b>（余りのペナルティ調整） — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
     </label>
   </div>
   <div id="rankScoreGrid" style="margin-bottom:12px"></div>
@@ -1006,7 +1006,9 @@ function loadFormState() {
   }
 
   if (state.calcMode) {
-    const radio = document.querySelector(`input[name="calcMode"][value="${state.calcMode}"]`);
+    const legacyModes = { '1': 'normal', '2': 'no-extra', '3': 'advanced' };
+    const calcMode = legacyModes[state.calcMode] || state.calcMode;
+    const radio = document.querySelector(`input[name="calcMode"][value="${calcMode}"]`);
     if (radio) radio.checked = true;
   }
 }
@@ -1014,11 +1016,11 @@ function loadFormState() {
 // 計算モードに応じてペナルティ調整モード用スコア欄の表示を切り替え
 function getSelectedCalcMode() {
   const el = document.querySelector('input[name="calcMode"]:checked');
-  return el ? el.value : '1';
+  return el ? el.value : 'normal';
 }
 function onCalcModeChange() {
   const grid = document.getElementById('rankScoreGrid');
-  if (grid) grid.style.display = getSelectedCalcMode() === '3' ? '' : 'none';
+  if (grid) grid.style.display = getSelectedCalcMode() === 'advanced' ? '' : 'none';
 }
 
 // ─── メイン処理 ──────────────────────────────────────────
@@ -1348,10 +1350,10 @@ function runCalc() {
     }
 
     const mode = getSelectedCalcMode();
-    if (mode === '2') {
+    if (mode === 'no-extra') {
       const res = solver.Solve(buildModelMinShortfall(currentStages, noExcessList));
       html += renderNoExcessResult(res, currentStages, targetList);
-    } else if (mode === '3') {
+    } else if (mode === 'advanced') {
       const res = solver.Solve(buildModelPenalizedExcess(currentStages, penalizedList));
       html += renderPenalizedResult(res, currentStages, targetList);
     } else {
