@@ -1339,6 +1339,7 @@ function runCalc() {
     const unreachableSet = new Set(unreachable.map(u => u.key));
     const activeList     = targetList.filter(it => it.target > 0 && !unreachableSet.has(it.key));
     const noExcessList   = targetList;
+    const penalizedList  = targetList.filter(it => !unreachableSet.has(it.key));
 
     let html = '';
     if (unreachable.length > 0) {
@@ -1351,7 +1352,7 @@ function runCalc() {
       const res = solver.Solve(buildModelMinShortfall(currentStages, noExcessList));
       html += renderNoExcessResult(res, currentStages, targetList);
     } else if (mode === '3') {
-      const res = solver.Solve(buildModelPenalizedExcess(currentStages, activeList));
+      const res = solver.Solve(buildModelPenalizedExcess(currentStages, penalizedList));
       html += renderPenalizedResult(res, currentStages, targetList);
     } else {
       const res = solver.Solve(buildModelMinRuns(currentStages, activeList));
