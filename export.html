@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>トリッカル データ保存</title>
+  <style>
+    :root {
+  font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+  color: #182b3e;
+  background: #f3f6fa;
+  font-size: 16px;
+  line-height: 1.6;
+  accent-color: #1768ce
+  }
+
+  * { box-sizing: border-box }
+  body { margin: 0 }
+
+  header {
+  background: #16324e;
+  color: white;
+  border-bottom: 4px solid #63cddd;
+      padding: 25px max(24px, calc((100vw - 1200px)/2))
+    }
+
+    header p { margin: 0; color: #a5d9e9; font-size: .875rem; letter-spacing: .12em }
+  h1 { font-size: 1.6rem; margin: 3px 0 }
+  main { max-width: 1248px; margin: auto; padding: 28px 24px 60px }
+
+  section {
+  background: white;
+  border: 1px solid #d8e1eb;
+  border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px
+    }
+  h2 { font-size: 1.15rem; margin: 0 0 14px; display: flex; align-items: center; gap: 12px }
+  .step { font-size: .8rem; background: #e5effb; color: #185aa8; padding: 3px 9px; border-radius: 5px }
+  .help { color: #506276; font-size: .9rem; margin: 8px 0 14px }
+    button {
+      font: inherit;
+      font-weight: 600;
+  border: 0;
+  border-radius: 7px;
+  background: #1768ce;
+  color: white;
+  cursor: pointer;
+  padding: 11px 22px
+  }
+
+  button:hover { background: #1256ad }
+  button:disabled { background: #9ba9b6; cursor: not-allowed }
+  input[type=file] { font: inherit; max-width: 100% }
+  input:focus-visible, button:focus-visible { outline: 3px solid #84c3ff; outline-offset: 2px }
+  .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px }
+  .file-area { padding: 14px 16px; background: #f7faff; border: 1px solid #d8e1eb; border-radius: 9px }
+  .status { min-height: 1.6em; color: #506276; font-size: .9rem; margin: 10px 0 0 }
+  .status.error { color: #a73c30 }
+  footer { color: #64768a; font-size: .875rem; text-align: center }
+
+  .tool-nav { background: #fff; border-bottom: 1px solid #d8e1eb; box-shadow: 0 2px 8px rgb(22 50 78 / 8%) }
+  .tool-nav-inner { max-width: 1248px; margin: auto; padding: 0 24px; display: flex; align-items: stretch; overflow-x: auto }
+  .tool-nav-brand { flex: 0 0 auto; align-self: center; margin-right: 18px; color: #16324e; font-size: .78rem; font-weight: 700; letter-spacing: .08em }
+  .tool-nav a { flex: 0 0 auto; padding: 12px 14px 10px; border-bottom: 3px solid transparent; color: #506276; font-size: .9rem; font-weight: 600; text-decoration: none; white-space: nowrap }
+  .tool-nav a:hover { background: #f3f8fd; color: #1768ce }
+  .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff }
+  .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px }
+    @media(max-width:700px) {
+      main { padding: 18px 12px }
+      header { padding: 18px 16px }
+  section { padding: 18px 14px }
+  .tool-nav-inner { padding: 0 12px }
+  .tool-nav-brand { margin-right: 8px }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <p>TRICKCAL / DATA BACKUP</p>
+    <h1>データ保存・復元</h1>
+  </header>
+  <nav class="tool-nav" aria-label="ツール間の移動">
+    <div class="tool-nav-inner">
+      <span class="tool-nav-brand">TRICKCAL TOOLS</span>
+      <a href="apostle_equipment.html">装備管理</a>
+  <a href="equipment_calc.html">必要量計算</a>
+  <a href="equipment_planner.html">周回計画</a>
+  <a href="export.html" aria-current="page">データ保存</a>
+    </div>
+  </nav>
+  <main>
+    <section aria-labelledby="export-title">
+      <h2 id="export-title"><span class="step">01</span>データをエクスポート</h2>
+      <p class="help">装備管理・必要量計算・周回計画の保存データを JSON ファイルとしてダウンロードします。他のデバイスへコピーして、この画面から復元できます。</p>
+      <div class="actions">
+        <button id="export-button" type="button">JSON をダウンロード</button>
+      </div>
+      <p id="export-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+    <section aria-labelledby="import-title">
+  <h2 id="import-title"><span class="step">02</span>データをインポート</h2>
+  <p class="help">エクスポートした JSON ファイルを選択して読み込みます。復元すると、現在のツール保存データはバックアップの内容で上書きされます。</p>
+  <div class="file-area">
+        <label for="import-file">バックアップ JSON</label><br>
+        <input id="import-file" type="file" accept=".json,application/json">
+      </div>
+      <div class="actions" style="margin-top:14px">
+        <button id="import-button" type="button" disabled>読み込んだデータで復元</button>
+      </div>
+      <p id="import-status" class="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+  <footer>保存データは、このブラウザーのローカルストレージに保存されます。</footer>
+  <script>
+    'use strict';
+  const BACKUP_SCHEMA = 'trickcal_tools_backup';
+  const BACKUP_VERSION = 1;
+  const STORAGE_KEYS = ['apostle_equipment', 'trickcal_equipment_plan', 'trickcalTools.formState.v1'];
+  let pendingBackup = null;
+
+  function formatTimestamp(date) {
+      const pad = value => String(value).padStart(2, '0');
+      return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}_${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}_${String(date.getMilliseconds()).padStart(3, '0')}`;
+    }
+    function setStatus(id, message, isError = false) {
+      const element = document.getElementById(id);
+      element.textContent = message;
+      element.classList.toggle('error', isError);
+    }
+
+    function validateBackup(backup) {
+      if (!backup || typeof backup !== 'object' || Array.isArray(backup)
+        || backup.schema !== BACKUP_SCHEMA || backup.version !== BACKUP_VERSION
+        || !backup.storage || typeof backup.storage !== 'object' || Array.isArray(backup.storage)) return false;
+      return STORAGE_KEYS.every(key => backup.storage[key] === null || typeof backup.storage[key] === 'string');
+  }
+
+  document.getElementById('export-button').addEventListener('click', () => {
+      try {
+        const now = new Date();
+        const backup = {
+          schema: BACKUP_SCHEMA,
+          version: BACKUP_VERSION,
+          exportedAt: now.toISOString(),
+          storage: Object.fromEntries(STORAGE_KEYS.map(key => [key, localStorage.getItem(key)])),
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `trickcal_tools_${formatTimestamp(now)}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+        setStatus('export-status', 'セーブデータをエクスポートしました。');
+      } catch (error) {
+        setStatus('export-status', 'エクスポートできませんでした。ブラウザーの保存設定を確認してください。', true);
+      }
+    });
+
+    document.getElementById('import-file').addEventListener('change', event => {
+  const file = event.target.files[0];
+  pendingBackup = null;
+  document.getElementById('import-button').disabled = true;
+      if (!file) {
+        setStatus('import-status', '');
+        return;
+  }
+  const reader = new FileReader();
+  reader.addEventListener('load', () => {
+        try {
+          const backup = JSON.parse(reader.result);
+          if (!validateBackup(backup)) throw new Error('invalid backup');
+          pendingBackup = backup;
+          document.getElementById('import-button').disabled = false;
+          const exportedAt = typeof backup.exportedAt === 'string' ? new Date(backup.exportedAt).toLocaleString('ja-JP') : '不明';
+          setStatus('import-status', `バックアップを読み込みました（作成日時: ${exportedAt}）。`);
+        } catch (error) {
+          setStatus('import-status', 'トリッカルツールのバックアップ JSON として読み込めませんでした。', true);
+        }
+      });
+      reader.addEventListener('error', () => setStatus('import-status', 'ファイルを読み込めませんでした。', true));
+      reader.readAsText(file);
+    });
+
+    document.getElementById('import-button').addEventListener('click', () => {
+  if (!pendingBackup || !validateBackup(pendingBackup)) return;
+  if (!confirm('現在のツール保存データを、読み込んだバックアップで上書きします。よろしいですか？')) return;
+  try {
+        for (const key of STORAGE_KEYS) {
+          const value = pendingBackup.storage[key];
+          if (value === null) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        }
+        setStatus('import-status', 'セーブデータを復元しました。各ツールを再読み込みして確認してください。');
+      } catch (error) {
+        setStatus('import-status', '復元できませんでした。ブラウザーの保存設定を確認してください。', true);
+      }
+    });
+  </script>
+</body>
+</html>
