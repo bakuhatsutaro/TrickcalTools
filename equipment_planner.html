@@ -363,15 +363,15 @@
   <div id="calcModeGrid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
       <input type="radio" name="calcMode" value="1" checked onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">必要量回収・余りを許容</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
+      <span><b style="color:#16324e">通常モード（余りを許容）</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
     </label>
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
       <input type="radio" name="calcMode" value="2" onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">余り禁止・回収量最大化</b> — 余りを一切許容せず、要求数にできるだけ近づく周回数を計算します。要求数に届かない場合はその内容を表示します。</span>
+      <span><b style="color:#16324e">余り禁止モード</b> — 余りを一切許容せず、要求数にできるだけ近づく周回数を計算します。要求数に届かない場合はその内容を表示します。</span>
     </label>
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
       <input type="radio" name="calcMode" value="3" onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">重み付き余り最小化</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
+      <span><b style="color:#16324e">余り調整モード</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
     </label>
   </div>
   <div id="rankScoreGrid" style="margin-bottom:12px"></div>
