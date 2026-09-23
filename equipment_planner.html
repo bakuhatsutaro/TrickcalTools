@@ -1284,7 +1284,7 @@ function renderNoExcessResult(res, stages, targetList) {
   const rows      = buildKeyRows(targetList, actuals);
   const shortRows = rows.filter(r => r.target - r.actual > 0.01);
 
-  h += `<div class="result-summary"><div class="kv"><span>総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
+  h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderDropEstimate(totalRuns);
   h += shortRows.length > 0
     ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">要求数に未達の項目あり</span> 余りを一切出さない制約の下では、以下の項目が要求数に届きません。</p>`
@@ -1307,7 +1307,7 @@ function renderPenalizedResult(res, stages, targetList) {
   const totalPenalty = excessRows.reduce((s, r) => s + (r.actual - r.target) * penaltyForRank(r.rank), 0);
 
   h += `<div class="result-summary">
-    <div class="kv"><span>総周回数</span><span>${sig3(totalRuns)}</span></div>
+    <div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div>
     <div class="kv"><span>余りペナルティ合計</span><span>${sig3(totalPenalty)}</span></div>
     <div class="kv"><span>目的関数値（周回数＋ペナルティ）</span><span>${sig3(res.result || 0)}</span></div>
   </div>`;
