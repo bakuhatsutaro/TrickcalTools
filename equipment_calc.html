@@ -38,6 +38,17 @@
       margin-bottom: 24px
     }
 
+    .intro-card {
+      background: white;
+      border: 1px solid #d8e1eb;
+      border-left: 4px solid #63cddd;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      color: #506276;
+      font-size: .9rem
+    }
+
     h2 { font-size: 1.15rem; margin: 0 0 14px; display: flex; align-items: center; gap: 12px }
 
     .step {
@@ -271,14 +282,13 @@
     </div>
   </nav>
   <main>
+    <div class="intro-card">ここでは<strong>01 各装備の必要数</strong>で不足している装備の個数を入力し、<strong>02 装備設計図の必要数および保有数</strong>で保有している装備設計図の個数を入力します。ここで入力した情報は<strong>周回計画</strong>で用いることができます。<strong>装備管理</strong>で入力した使徒データを用いる場合は、先に<strong>03 使徒の装備ランクの目標値</strong>を設定してください。</div>
     <section aria-labelledby="s01-title">
       <h2 id="s01-title"><span class="step">01</span>各装備の必要数</h2>
-      <p class="help">不足している装備（装備設計図ではなく）の量を入力してください。<a href="equipment_planner.html"><strong>周回計画</strong></a>で使います。</p>
-      <p class="help"><a href="apostle_equipment.html"><strong>装備管理</strong></a>で入力した使徒データを用いて計算することも可能です。その場合、先に<a href="#s03-title"><strong>03使徒の装備ランクの目標値</strong></a>を設定してください。</p>
       <div class="actions">
         <button id="importFromApostlesBtn">使徒データから読み込み</button>
-        <button class="secondary" id="resetReq01Btn">装備必要量を0にリセット</button>
-        <p class="help">使徒データ(03)は下に表示されています。ボタンを押すとデータは上書きされます。</p>
+        <button class="secondary" id="resetReq01Btn">装備必要量を0にリセット</button></br>
+        <p class="help">装備設計図ではなく、必要な装備の数そのものを記入します。使徒データは下に表示されています（<a href="#s03-title">03 使徒の装備ランクの目標値</a>）。読み込みボタンを押すとデータは上書きされます。手動入力も可能です</p>
       </div>
       <div class="actions" aria-label="01の装備表示順">
         <label><input type="radio" name="req01Order" value="bag"> 装備の並びをバッグ内の順序と一致させる</label>
