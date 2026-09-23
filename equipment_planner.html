@@ -359,11 +359,11 @@
 <!-- Calculate -->
 <div class="card">
   <h2 data-step="02">最適化計算</h2>
-  <p style="font-size:0.85rem;color:#889;margin-bottom:10px">左の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
+  <p style="font-size:0.85rem;color:#889;margin-bottom:10px">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
   <div id="calcModeGrid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
       <input type="radio" name="calcMode" value="1" checked onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">通常モード（余りを許容）</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
+      <span><b style="color:#16324e">通常モード</b>（余りを許容） — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
     </label>
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
       <input type="radio" name="calcMode" value="2" onchange="onCalcModeChange()" style="margin-top:3px">
@@ -371,7 +371,7 @@
     </label>
     <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
       <input type="radio" name="calcMode" value="3" onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">余り調整モード</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
+      <span><b style="color:#16324e">詳細モード</b>（余りのペナルティ調整） — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
     </label>
   </div>
   <div id="rankScoreGrid" style="margin-bottom:12px"></div>
