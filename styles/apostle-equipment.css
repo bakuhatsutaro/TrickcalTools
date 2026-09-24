@@ -1,0 +1,635 @@
+:root {
+      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+      color: #182b3e;
+      background: #f3f6fa;
+      font-size: 16px;
+      line-height: 1.6;
+      --equipment-header-font-size: 1.02rem;
+      /* adjustable font-size for equipment header row */
+      accent-color: #1768ce
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0
+    }
+
+    header {
+      background: #16324e;
+      color: white;
+      border-bottom: 4px solid #63cddd;
+      padding: 25px max(24px, calc((100vw - 1200px)/2))
+    }
+
+    header p {
+      margin: 0;
+      color: #a5d9e9;
+      font-size: .875rem;
+      letter-spacing: .12em
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      margin: 3px 0
+    }
+
+    main {
+      max-width: 1248px;
+      margin: auto;
+      padding: 28px 24px 60px
+    }
+
+    section {
+      background: white;
+      border: 1px solid #d8e1eb;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px
+    }
+
+    .intro-card {
+      background: white;
+      border: 1px solid #d8e1eb;
+      border-left: 4px solid #63cddd;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      color: #506276;
+      font-size: .9rem
+    }
+
+    h2 {
+      font-size: 1.15rem;
+      margin: 0 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px
+    }
+
+    .step {
+      font-size: .8rem;
+      background: #e5effb;
+      color: #185aa8;
+      padding: 3px 9px;
+      border-radius: 5px
+    }
+
+    .help {
+      color: #506276;
+      font-size: .9rem;
+      margin: 8px 0 14px
+    }
+
+    textarea,
+    input[type=text] {
+      font: inherit;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      color: inherit;
+      background: white;
+      padding: 9px 11px
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      resize: vertical;
+      line-height: 1.9
+    }
+
+    textarea:focus,
+    input:focus-visible,
+    button:focus-visible {
+      outline: 3px solid #84c3ff;
+      outline-offset: 2px
+    }
+
+    button {
+      font: inherit;
+      font-weight: 600;
+      border: 0;
+      border-radius: 7px;
+      background: #1768ce;
+      color: white;
+      cursor: pointer;
+      padding: 11px 22px
+    }
+
+    button:hover {
+      background: #1256ad
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+      margin-top: 12px
+    }
+
+    .actions span {
+      font-size: .875rem;
+      color: #506276
+    }
+
+    #status {
+      margin-left: auto;
+      color: #375c79
+    }
+
+    .table-wrap {
+      overflow-x: auto
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1050px
+    }
+
+    th {
+      background: #f0f5fa;
+      text-align: center;
+      font-size: .875rem;
+      color: #496078;
+      font-weight: 600;
+      padding: 12px 8px;
+      border-bottom: 1px solid #c6d5e3
+    }
+
+    /* Equipment header row font-size (can be adjusted via CSS variable) */
+    #table-head th,
+    #unknown-head th {
+      font-size: var(--equipment-header-font-size, 1.05rem);
+      padding: 14px 10px;
+      color: #2f4b5f;
+    }
+
+    td {
+      padding: 14px 8px;
+      border-bottom: 1px solid #e0e8f0;
+      text-align: center
+    }
+
+    th:first-child,
+    td:first-child {
+      width: 68px;
+      text-align: center
+    }
+
+    th:nth-child(2),
+    td:nth-child(2) {
+      text-align: left;
+      width: 180px
+    }
+
+    th:nth-child(3) {
+      width: 76px
+    }
+
+    td input[type=text] {
+      width: 100%;
+      min-width: 40px;
+      max-width: 60px;
+      box-sizing: border-box;
+    }
+
+    td input[type=checkbox] {
+      width: 21px;
+      height: 21px;
+      cursor: pointer
+    }
+
+    td.not-applicable {
+      color: #9ba9b6
+    }
+
+    tbody tr:hover {
+      background: #f8fbff
+    }
+
+    #warnings {
+      margin-top: 18px;
+      border-left: 3px solid #d99623;
+      background: #fff8e9;
+      padding: 12px 18px;
+      font-size: .9rem
+    }
+
+    #warnings ul {
+      margin: 8px 0;
+      padding-left: 22px
+    }
+
+    #warnings p {
+      margin: 0
+    }
+
+    details {
+      color: #506276;
+      font-size: .875rem;
+      margin-top: 18px
+    }
+
+    summary {
+      cursor: pointer
+    }
+
+    code {
+      background: #edf2f7;
+      padding: 2px 5px;
+      border-radius: 3px
+    }
+
+    footer {
+      color: #64768a;
+      font-size: .875rem;
+      text-align: center
+    }
+
+    [hidden] {
+      display: none !important
+    }
+
+    @media(max-width:600px) {
+      main {
+        padding: 18px 12px
+      }
+
+      header {
+        padding: 18px 16px
+      }
+
+      section {
+        padding: 18px 14px
+      }
+
+      h1 {
+        font-size: 1.35rem
+      }
+
+      .actions {
+        gap: 10px
+      }
+
+      #status {
+        margin-left: 0;
+        width: 100%
+      }
+    }
+
+    .confirm-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .9rem;
+      margin-top: 16px;
+      cursor: pointer
+    }
+
+    .confirm-option input {
+      width: 19px;
+      height: 19px
+    }
+
+    .delete-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      padding: 10px;
+      background: #fff0f0;
+      color: #a12b32
+    }
+
+    .delete-button:hover {
+      background: #ffdddd
+    }
+
+    .delete-button svg {
+      width: 20px;
+      height: 20px
+    }
+
+    .replace-button {
+      background: #42566e
+    }
+
+    .replace-button:hover {
+      background: #31445b
+    }
+
+    .attack-type {
+      display: inline-block;
+      min-width: 3.4em;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eaf1f8;
+      color: #344e67;
+      font-size: .875rem
+    }
+
+    .attack-type[data-type="物理"] {
+      background: #fff0e7;
+      color: #8a3b17
+    }
+
+    .attack-type[data-type="魔法"] {
+      background: #eeeaff;
+      color: #4e3b91
+    }
+
+    .json-tools {
+      margin: 18px 0;
+      padding: 16px;
+      background: #f0f5fa;
+      border-radius: 8px
+    }
+
+    .json-tools input[type=file] {
+      display: block;
+      max-width: 100%;
+      margin: 8px 0;
+      font: inherit
+    }
+
+    .mapping {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 10px
+    }
+
+    .mapping label {
+      display: flex;
+      flex-direction: column
+    }
+
+    .mapping select {
+      font: inherit;
+      padding: 8px;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      background: white
+    }
+
+    #import-error {
+      color: #9c202b;
+      background: #fff0f0;
+      padding: 12px;
+      border-radius: 6px
+    }
+
+    #file-status {
+      font-size: .875rem
+    }
+
+    td select {
+      font: inherit;
+      padding: 8px;
+      border: 1px solid #aebfd1;
+      border-radius: 6px;
+      background: white
+    }
+
+    select:focus-visible {
+      outline: 3px solid #84c3ff;
+      outline-offset: 2px
+    }
+
+    td input[type=checkbox]:disabled {
+      cursor: not-allowed
+    }
+
+    table {
+      min-width: 980px
+    }
+
+    .not-owned td:nth-child(2),
+    .not-owned td:nth-child(2) input {
+      color: #8997a5
+    }
+
+    .not-owned input:disabled {
+      background: #f1f4f7;
+      color: #8997a5
+    }
+
+    .file-area {
+      /* 上下・左の余白を調整できます。必要ならJavaScriptや外部CSSで変数を書き換えてください。 */
+      --fa-pt: 12px;
+      --fa-pb: 6px;
+      --fa-pl: 24px;
+      padding: var(--fa-pt) 0 var(--fa-pb) var(--fa-pl);
+      display: block;
+    }
+
+    .file-controls {
+      /* ボタン専用の領域。改行して配置されます。 */
+      padding-left: var(--fa-pl);
+      margin-top: 8px;
+    }
+
+.filter-panel {
+      margin: 12px 0 16px;
+      padding: 14px 16px;
+      background: #f7faff;
+      border: 1px solid #d8e1eb;
+      border-radius: 9px
+    }
+
+    .filter-group {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr;
+      align-items: start;
+      gap: 10px;
+      margin: 8px 0
+    }
+
+    .filter-label {
+      font-size: .9rem;
+      color: #506276;
+      padding-top: 7px
+    }
+
+    .filter-buttons {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap
+    }
+
+    .bulk-ownership-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px
+    }
+
+    .bulk-ownership-actions button {
+      padding: 7px 10px;
+      background: #42566e
+    }
+
+    .bulk-ownership-actions button:hover {
+      background: #31445b
+    }
+
+    .filter-button {
+      min-width: 42px;
+      padding: 7px 10px;
+      background: #f0f5fa;
+      color: #496078;
+      border: 1px solid #c6d5e3
+    }
+
+    .filter-button:hover {
+      background: #e1ebf5
+    }
+
+    .filter-button[aria-pressed="true"] {
+      background: #1768ce;
+      color: white;
+      border-color: #1768ce
+    }
+
+    .clear-source-button {
+      background: white;
+      color: #8d2730;
+      border: 1px solid #d7a6aa
+    }
+
+    .clear-source-button:hover {
+      background: #fff0f0
+    }
+
+    .json-tools, .source-area {
+      border: 1px solid #bcd;
+      background: #f6fbff;
+      padding: var(--fa-pt, 12px) var(--fa-pl, 12px) var(--fa-pb, 12px);
+      border-radius: 6px;
+      margin-bottom: 12px;
+    }
+
+    .json-tools label strong, .source-area label strong { font-weight: 700; }
+
+    .file-area { padding: 8px 0; }
+
+    .file-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0 0;
+    }
+
+    #file-status { margin: 0; }
+
+    .tool-nav {
+      background: #fff;
+      border-bottom: 1px solid #d8e1eb;
+      box-shadow: 0 2px 8px rgb(22 50 78 / 8%);
+    }
+
+    .tool-nav-inner {
+      max-width: 1248px;
+      margin: auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: stretch;
+      overflow-x: auto;
+    }
+
+    .tool-nav-brand {
+      flex: 0 0 auto;
+      align-self: center;
+      margin-right: 18px;
+      color: #16324e;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+    }
+
+    .tool-nav a {
+      flex: 0 0 auto;
+      padding: 12px 14px 10px;
+      border-bottom: 3px solid transparent;
+      color: #506276;
+      font-size: .9rem;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .tool-nav a:hover { background: #f3f8fd; color: #1768ce }
+    .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff }
+    .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px }
+
+    @media(max-width:600px) {
+      .filter-group {
+        grid-template-columns: 1fr;
+        gap: 3px
+      }
+
+      .filter-label {
+        padding-top: 0
+      }
+
+      .tool-nav-inner { padding: 0 12px }
+      .tool-nav-brand { margin-right: 8px }
+    }
+
+/* Reduce button heights for filter and action buttons */
+    .filter-button,
+    .actions button,
+    button.replace-button,
+    button.clear-source-button {
+      padding: 4px 8px;
+      /* smaller vertical padding */
+      line-height: 1;
+      /* tighter line height */
+      font-size: 0.95rem;
+    }
+
+    /* Ensure buttons remain accessible on small screens */
+    @media (max-width: 420px) {
+
+      .filter-button,
+      .actions button {
+        padding: 3px 6px;
+      }
+    }
+
+    /* Reduce rank display/input height in registered (02) and unknown (03) lists */
+    /* Targets text nodes and inputs rendered in table cells */
+    #table-body td.rank,
+    #unknown-body td.rank {
+      padding: 2px 6px;
+      font-size: 0.9rem;
+      line-height: 1;
+      vertical-align: middle;
+      text-align: center;
+    }
+
+    /* Specific rank inputs in the registered/unknown tables (override other rules) */
+    #table-body td input[type="text"],
+    #table-body td input[type="number"],
+    #unknown-body td input[type="text"],
+    #unknown-body td input[type="number"] {
+      padding: 1px 3px;
+      /* give some vertical height */
+      box-sizing: border-box;
+      height: auto;
+      line-height: 1;
+      font-size: 1.25rem;
+      text-align: center;
+      /* center the rank input value */
+      min-width: 40px;
+      max-width: 50px;
+    }
+
+    /* Do NOT center the main source input textarea - it MUST be left-aligned */
+    #source {
+      text-align: left;
+    }

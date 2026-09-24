@@ -4,331 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>装備取得効率計算ツール</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', 'Meiryo', sans-serif;
-      background: #12121e;
-      color: #dde;
-      padding: 16px;
-      min-height: 100vh;
-    }
-    h1 {
-      color: #ffd700;
-      text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 18px;
-      letter-spacing: 0.05em;
-    }
-    h2 {
-      color: #89c4f4;
-      font-size: 1rem;
-      border-bottom: 1px solid #334;
-      padding-bottom: 6px;
-      margin-bottom: 12px;
-    }
-    .card {
-      background: #1a1a2e;
-      border: 1px solid #2a2a4e;
-      border-radius: 8px;
-      padding: 14px 16px;
-      margin-bottom: 14px;
-    }
-
-
-    /* Layout */
-    .two-col {
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 14px;
-      align-items: start;
-    }
-    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
-
-    /* Target inputs */
-    .tgt-input {
-      width: 58px;
-      background: #0e1030;
-      border: 1px solid #445;
-      color: #dde;
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-      text-align: right;
-    }
-    .tgt-input:focus { outline: none; border-color: #89c4f4; }
-    #targetsGrid th { padding: 5px 8px; font-size: 0.8rem; }
-    #targetsGrid td { padding: 3px 8px; }
-    #targetsGrid td:first-child { font-weight: normal; color: #dde; text-align: left; }
-
-    /* Rank ON/OFF toggle buttons */
-    .rank-toggle {
-      font-size: 0.85rem;
-      padding: 4px 12px;
-      border-radius: 14px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .rank-toggle.on {
-      background: #1a4b2a;
-      border: 1px solid #40a060;
-      color: #aaffaa;
-    }
-    .rank-toggle.off {
-      background: #1a1a2e;
-      border: 1px solid #334;
-      color: #667;
-    }
-
-    /* Tables */
-    .tbl-wrap { overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; font-size: 0.85rem; }
-    th {
-      background: #0e1030;
-      padding: 7px 10px;
-      text-align: center;
-      color: #89c4f4;
-      white-space: nowrap;
-    }
-    td {
-      padding: 5px 10px;
-      border-bottom: 1px solid #1e1e3e;
-      text-align: center;
-      white-space: nowrap;
-    }
-    tr:hover td { background: #1e1e3e; }
-    td:first-child { text-align: left; font-weight: bold; color: #ccc; }
-    th:first-child { text-align: left; }
-
-    /* Rank badges */
-    .r9 { color: #ffd700; font-weight: bold; }
-    .r8 { color: #89c4f4; }
-    .r-dash { color: #444; }
-
-    /* Analysis badges */
-    .badge {
-      display: inline-block;
-      padding: 2px 10px;
-      border-radius: 12px;
-      font-size: 0.78rem;
-      font-weight: bold;
-    }
-    .badge-unavoidable { background: #6b1a1a; color: #ffaaaa; border: 1px solid #c04040; }
-    .badge-avoidable   { background: #1a4b2a; color: #aaffaa; border: 1px solid #40a060; }
-
-    /* Stage list abbreviations */
-    .stages-list { font-size: 0.82rem; color: #bbb; }
-
-    /* Section placeholder */
-    .placeholder { color: #556; font-size: 0.9rem; padding: 8px 0; }
-
-    /* Calculate button (disabled for now) */
-    .calc-btn {
-      display: block;
-      margin: 0 auto;
-      padding: 10px 32px;
-      background: #2a3a6a;
-      border: 1px solid #4a6aaa;
-      color: #89c4f4;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .calc-btn:hover { background: #3a4a8a; }
-    .calc-btn:disabled {
-      background: #1a1a2e;
-      border-color: #334;
-      color: #556;
-      cursor: not-allowed;
-    }
-    /* Result display */
-    .result-summary {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 24px;
-      background: #0e1030;
-      padding: 10px 14px;
-      border-radius: 6px;
-      margin-bottom: 14px;
-    }
-    .result-summary .kv { display: flex; flex-direction: column; gap: 2px; }
-    .result-summary .kv span:first-child { color: #89c4f4; font-size: 0.78rem; }
-    .result-summary .kv span:last-child  { color: #ffd700; font-weight: bold; font-size: 1.1rem; }
-    h3.result-h {
-      color: #89c4f4; font-size: 0.88rem; font-weight: normal;
-      border-left: 3px solid #89c4f4; padding-left: 8px;
-      margin: 14px 0 8px;
-    }
-    .calc-status { color: #89c4f4; font-size: 0.9rem; padding: 8px 0; }
-    .penalty-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-      font-size: 0.88rem;
-    }
-    .penalty-row label { color: #aab; flex: 1; }
-    .penalty-row input {
-      width: 72px;
-      background: #0e1030;
-      border: 1px solid #445;
-      color: #dde;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      text-align: right;
-    }
-    .penalty-row input:focus { outline: none; border-color: #89c4f4; }
-    .over  { color: #ffcc88; }
-    .under { color: #88ccff; }
-    .exact { color: #88ff88; }
-    .infeasible-warning {
-      color: #ffaaaa;
-      background: #2a1a1a;
-      border: 1px solid #c04040;
-      padding: 10px 14px;
-      border-radius: 6px;
-      margin-bottom: 14px;
-      font-size: 0.9rem;
-    }
-
-    /* Accordion */
-    .accordion-summary {
-      cursor: pointer;
-      color: #89c4f4;
-      font-size: 1rem;
-      list-style: none;
-    }
-    .accordion-summary::-webkit-details-marker { display: none; }
-    .accordion-summary::before { content: '▶ '; }
-    details[open] .accordion-summary::before { content: '▼ '; }
-
-    /* Shared Trickcal equipment-tool theme */
-    :root {
-      color: #182b3e;
-      background: #f3f6fa;
-      font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
-      font-size: 16px;
-      line-height: 1.6;
-      accent-color: #1768ce;
-    }
-    body { background: #f3f6fa; color: #182b3e; padding: 0; }
-    header {
-      background: #16324e;
-      color: white;
-      border-bottom: 4px solid #63cddd;
-      padding: 25px max(24px, calc((100vw - 1200px) / 2));
-    }
-    header p { margin: 0; color: #a5d9e9; font-size: .875rem; letter-spacing: .12em; }
-    header h1 { color: white; text-align: left; font-size: 1.6rem; margin: 3px 0; letter-spacing: 0; }
-    main { max-width: 1248px; margin: auto; padding: 28px 24px 60px; }
-    .card {
-      background: white;
-      border: 1px solid #d8e1eb;
-      border-radius: 12px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    h2 { color: #182b3e; font-size: 1.15rem; border: 0; padding: 0; margin: 0 0 14px; }
-    .card > h2::before {
-      content: attr(data-step);
-      display: inline-block;
-      margin-right: 12px;
-      padding: 3px 9px;
-      border-radius: 5px;
-      background: #e5effb;
-      color: #185aa8;
-      font-size: .8rem;
-      vertical-align: 1px;
-    }
-    .card > h2[data-step=""]::before { display: none; }
-    p[style], label[style], span[style] { color: #506276 !important; }
-    input[type=number], .tgt-input, .penalty-row input {
-      background: white;
-      border: 1px solid #aebfd1;
-      color: #182b3e;
-      border-radius: 6px;
-      padding: 6px 8px;
-    }
-    #targetsGrid .tgt-input { width: 84px; }
-    input:focus-visible, button:focus-visible { outline: 3px solid #84c3ff; outline-offset: 2px; }
-    button, .calc-btn {
-      font: inherit;
-      font-weight: 600;
-      background: #1768ce !important;
-      border: 0 !important;
-      border-radius: 7px !important;
-      color: white !important;
-      cursor: pointer;
-    }
-    button:hover, .calc-btn:hover { background: #1256ad !important; }
-    .calc-btn:disabled { background: #9ba9b6 !important; color: white !important; cursor: not-allowed; }
-    .rank-toggle.on, .rank-toggle.off, .filter-button {
-      background: #f0f5fa !important;
-      color: #496078 !important;
-      border: 1px solid #c6d5e3 !important;
-    }
-    .rank-toggle.on { background: #1768ce !important; color: white !important; border-color: #1768ce !important; }
-    .result-summary { background: #f0f5fa; border: 1px solid #d8e1eb; }
-    .result-summary .kv span:first-child, h3.result-h, .calc-status { color: #496078; }
-    .result-summary .kv span:last-child { color: #1768ce; }
-    h3.result-h { border-left-color: #1768ce; }
-    .infeasible-warning { background: #fff8e9; color: #7a5516; border-color: #d99623; }
-    .tbl-wrap { overflow-x: auto; }
-    table { font-size: .875rem; }
-    th { background: #f0f5fa; color: #496078; padding: 10px 8px; border-bottom: 1px solid #c6d5e3; }
-    td { padding: 8px; border-bottom: 1px solid #e0e8f0; color: #182b3e; }
-    td:first-child, #targetsGrid td:first-child { color: #182b3e; }
-    tr:hover td { background: #f8fbff; }
-    .r9 { color: #185aa8; }
-    .r8 { color: #496078; }
-    .r-dash, .placeholder { color: #9ba9b6; }
-    .accordion-summary { color: #182b3e; font-weight: 600; }
-    .tool-nav {
-      background: #fff;
-      border-bottom: 1px solid #d8e1eb;
-      box-shadow: 0 2px 8px rgb(22 50 78 / 8%);
-    }
-    .tool-nav-inner {
-      max-width: 1248px;
-      margin: auto;
-      padding: 0 24px;
-      display: flex;
-      align-items: stretch;
-      overflow-x: auto;
-    }
-    .tool-nav-brand {
-      flex: 0 0 auto;
-      align-self: center;
-      margin-right: 18px;
-      color: #16324e;
-      font-size: .78rem;
-      font-weight: 700;
-      letter-spacing: .08em;
-    }
-    .tool-nav a {
-      flex: 0 0 auto;
-      padding: 12px 14px 10px;
-      border-bottom: 3px solid transparent;
-      color: #506276;
-      font-size: .9rem;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .tool-nav a:hover { background: #f3f8fd; color: #1768ce; }
-    .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff; }
-    .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px; }
-    @media (max-width: 700px) {
-      main { padding: 18px 12px; }
-      header { padding: 18px 16px; }
-      .card { padding: 18px 14px; }
-      .tool-nav-inner { padding: 0 12px; }
-      .tool-nav-brand { margin-right: 8px; }
-    }
-  </style>
   <script src="https://cdn.jsdelivr.net/npm/javascript-lp-solver/prod/solver.min.js"></script>
+  <link rel="stylesheet" href="styles/equipment-planner.css">
+  <link rel="stylesheet" href="styles/common.css">
 </head>
 <body>
 <header>
@@ -346,8 +24,8 @@
 </nav>
 <main>
 
-<div class="card" style="border-left:4px solid #63cddd">
-  <p style="font-size:0.9rem;color:#506276;line-height:1.7">まず<strong>必要量計算</strong>で装備の必要数を設定することを強くお勧めします。使徒の装備状況に基づいて必要数を計算したい場合は<strong>装備管理</strong>に使徒の装備データを追加してください。</p>
+<div class="card" data-style="s001">
+  <p data-style="s002">まず<strong>必要量計算</strong>で装備の必要数を設定することを強くお勧めします。使徒の装備状況に基づいて必要数を計算したい場合は<strong>装備管理</strong>に使徒の装備データを追加してください。</p>
 </div>
 
 <!-- Target counts -->
@@ -359,31 +37,31 @@
 <!-- Calculate -->
 <div class="card">
   <h2 data-step="02">最適化計算</h2>
-  <p style="font-size:0.85rem;color:#889;margin-bottom:10px">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
-  <div id="calcModeGrid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
-    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-      <input type="radio" name="calcMode" value="normal" checked onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">通常モード</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
+  <p data-style="s003">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
+  <div id="calcModeGrid" data-style="s004">
+    <label data-style="s005">
+      <input type="radio" name="calcMode" value="normal" checked onchange="onCalcModeChange()" data-style="s006">
+      <span><b data-style="s007">通常モード</b> — 余りの発生を許容し、要求数を満たす最小の周回数を計算します。余りが避けられない場合はその内容を表示します。</span>
     </label>
-    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-      <input type="radio" name="calcMode" value="advanced" onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">詳細モード</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
+    <label data-style="s005">
+      <input type="radio" name="calcMode" value="advanced" onchange="onCalcModeChange()" data-style="s006">
+      <span><b data-style="s007">詳細モード</b> — 余りを許容しつつ、ランクごとのスコアに応じたペナルティを周回数に加えて最小化します（下のスコアで調整）。</span>
     </label>
-    <label style="font-size:0.85rem;color:#ccc;display:flex;gap:8px;align-items:flex-start;cursor:pointer">
-      <input type="radio" name="calcMode" value="no-extra" onchange="onCalcModeChange()" style="margin-top:3px">
-      <span><b style="color:#16324e">余り禁止モード</b> — 余りを一切許容せず、要求数にできるだけ近づく周回数を計算します。要求数に届かない場合はその内容を表示します。</span>
+    <label data-style="s005">
+      <input type="radio" name="calcMode" value="no-extra" onchange="onCalcModeChange()" data-style="s006">
+      <span><b data-style="s007">余り禁止モード</b> — 余りを一切許容せず、要求数にできるだけ近づく周回数を計算します。要求数に届かない場合はその内容を表示します。</span>
     </label>
   </div>
-  <div id="rankScoreGrid" style="margin-bottom:12px"></div>
+  <div id="rankScoreGrid" data-style="s008"></div>
   <button class="calc-btn" id="calcBtn" disabled onclick="runCalc()">計算実行</button>
-  <div id="calcResult" style="margin-top:14px"></div>
+  <div id="calcResult" data-style="s009"></div>
 </div>
 
 <!-- Stage list (accordion) -->
 <div class="card">
   <details>
     <summary class="accordion-summary">ステージ一覧</summary>
-    <div id="stageTableWrap" class="tbl-wrap" style="margin-top:12px">
+    <div id="stageTableWrap" class="tbl-wrap" data-style="s010">
       <p class="placeholder">データを読み込むと表示されます</p>
     </div>
   </details>
@@ -393,7 +71,7 @@
 <div class="card">
   <details>
     <summary class="accordion-summary">アイテム分布（ステージ × 装備種類）</summary>
-    <div id="distTableWrap" class="tbl-wrap" style="margin-top:12px">
+    <div id="distTableWrap" class="tbl-wrap" data-style="s010">
       <p class="placeholder">データを読み込むと表示されます</p>
     </div>
   </details>
@@ -806,25 +484,25 @@ function buildTargetInputs(minRank, maxRank) {
 
   // リセットボタン（この表内の数値入力をすべて0にします）
   let h = '';
-  h += '<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center">';
-  h += '<button type="button" onclick="importEquipmentCalc()" style="background:#2a3a5a;color:#89c4f4;border:1px solid #4a6aaa;padding:6px 12px;border-radius:6px;cursor:pointer">必要量計算の結果をインポート</button>';
-  h += '<button type="button" onclick="resetTargets()" style="background:#552a2a;color:#ffd;border:1px solid #773333;padding:6px 12px;border-radius:6px;cursor:pointer">リセット</button>';
-  h += '<span style="font-size:0.85rem;color:#889">どちらも現在の数値は消去されます</span>';
+  h += '<div data-style="s011">';
+  h += '<button type="button" onclick="importEquipmentCalc()" data-style="s012">必要量計算の結果をインポート</button>';
+  h += '<button type="button" onclick="resetTargets()" data-style="s013">リセット</button>';
+  h += '<span data-style="s014">どちらも現在の数値は消去されます</span>';
   h += '</div>';
-  h += '<p style="font-size:0.8rem;color:#889;margin:18px 0 10px">※ ここで非表示にしたランクの装備設計図は0として計算されます。</p>';
+  h += '<p data-style="s015">※ ここで非表示にしたランクの装備設計図は0として計算されます。</p>';
 
-  h += '<div style="margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px">';
+  h += '<div data-style="s016">';
   for (let r = maxRank; r >= minRank; r--) {
     h += `<button type="button" class="rank-toggle on" id="rankVis_${r}" data-on="true" onclick="onRankVisChange(${r})">Rank${r}</button>`;
   }
   h += '</div>';
 
-  h += '<div class="tbl-wrap"><table style="width:100%"><thead><tr>';
-  h += '<th style="text-align:left">装備ランク</th>';
+  h += '<div class="tbl-wrap"><table data-style="s017"><thead><tr>';
+  h += '<th data-style="s018">装備ランク</th>';
   ITEM_TYPES.forEach((t, i) => { h += `<th id="typeLabel_${i}">${getTypeLabel(i)}</th>`; });
   h += '</tr></thead><tbody>';
   for (let r = maxRank; r >= minRank; r--) {
-    h += `<tr id="rankRow_${r}"><td style="text-align:left">Rank ${r}</td>`;
+    h += `<tr id="rankRow_${r}"><td data-style="s018">Rank ${r}</td>`;
     ITEM_TYPES.forEach((t, i) => {
       const def = r === maxRank ? DEFAULT_TARGETS[i] : (r === maxRank - 1 ? DEFAULT_MIN8[i] : 0);
       h += `<td><input type="number" class="tgt-input" id="req_${i}_${r}" value="${def}" min="0" step="1"></td>`;
@@ -942,12 +620,12 @@ function penaltyForRank(r) {
 }
 
 function buildRankScoreInputs(minRank, maxRank) {
-  let h = '<div style="font-size:0.82rem;color:#16324e;margin-bottom:8px">数字が大きいほど余りとして使われやすくなります。100だと余ることのペナルティは無くなり、マイナスの値だとペナルティが強まりこの装備ランクで余りを作ることを避けます。</div>';
-  h += '<div style="display:flex;flex-wrap:wrap;gap:10px">';
+  let h = '<div data-style="s019">数字が大きいほど余りとして使われやすくなります。100だと余ることのペナルティは無くなり、マイナスの値だとペナルティが強まりこの装備ランクで余りを作ることを避けます。</div>';
+  h += '<div data-style="s020">';
   for (let r = maxRank; r >= minRank; r--) {
-    h += `<label style="font-size:0.82rem;color:#aaa;display:flex;align-items:center;gap:4px">
+    h += `<label data-style="s021">
       Rank${r}
-      <input type="number" class="tgt-input" id="rankScore_${r}" style="width:64px" value="0" min="-1000" max="100" step="1">
+      <input type="number" class="tgt-input" id="rankScore_${r}" data-style="s022" value="0" min="-1000" max="100" step="1">
     </label>`;
   }
   h += '</div>';
@@ -1218,7 +896,7 @@ function renderKeyTable(rows, mode) {
     const flagged = diff > 0.01;
     const cls     = flagged ? (mode === 'excess' ? 'over' : 'under') : 'exact';
     h += `<tr>
-      <td style="text-align:left">${getTypeLabel(ITEM_TYPES.indexOf(r.type))}</td>
+      <td data-style="s018">${getTypeLabel(ITEM_TYPES.indexOf(r.type))}</td>
       <td>Rank${r.rank}</td>
       <td>${r.target}</td>
       <td>${sig3(r.actual)}</td>
@@ -1229,7 +907,6 @@ function renderKeyTable(rows, mode) {
   return h;
 }
 
-// 周回箇所はこのツールの核心情報のため、折りたたまずに常時表示する
 function renderStageRunsTable(stages, result) {
   const active = stages
     .map(s => ({ id: s.stage, runs: result[getStageVariableName(s)] || 0, drops: s.drops }))
@@ -1237,7 +914,7 @@ function renderStageRunsTable(stages, result) {
     .sort((a, b) => b.runs - a.runs);
   const totalRuns = active.reduce((s, sd) => s + sd.runs, 0);
 
-  let h = `<h4 style="color:#89c4f4;font-size:0.85rem;margin:14px 0 6px">周回するステージと周回数（非ゼロのみ、降順）</h4>`;
+  let h = `<h4 data-style="s023">周回するステージと周回数（非ゼロのみ、降順）</h4>`;
   h += `<div class="tbl-wrap"><table>
     <thead><tr><th>ステージ</th><th>周回数</th><th>割合</th><th>ドロップ1</th><th>ドロップ2</th></tr></thead><tbody>`;
   for (const sd of active) {
@@ -1251,13 +928,13 @@ function renderStageRunsTable(stages, result) {
 function renderDropEstimate(totalRuns) {
   const estimatedRuns = Math.ceil(totalRuns * 1.2);
   const candyNeeded = estimatedRuns * 10;
-  return `<p style="margin:8px 0;font-size:0.88rem;color:#aab">実際のドロップはランダムです。総周回数はこれに1.2をかけた程度の数、すなわち <span style="color:#ffd700;font-weight:bold;font-size:1.1rem">${estimatedRuns}</span> となります。必要キャンディ量は <span style="color:#ffd700;font-weight:bold;font-size:1.1rem">${candyNeeded}</span> です。</p>`;
+  return `<p data-style="s024">実際のドロップはランダムです。総周回数はこれに1.2をかけた程度の数、すなわち <span data-style="s025">${estimatedRuns}</span> となります。必要キャンディ量は <span data-style="s025">${candyNeeded}</span> です。</p>`;
 }
 
 function renderMinRunsResult(res, stages, targetList) {
   let h = `<h3 class="result-h">最小周回数モード（余り許容）</h3>`;
   if (!res.feasible) {
-    h += '<p style="color:#f88">⚠ 計算できませんでした。</p>';
+    h += '<p data-style="s026">⚠ 計算できませんでした。</p>';
     return h;
   }
   const actuals    = computeActuals(stages, res);
@@ -1268,9 +945,11 @@ function renderMinRunsResult(res, stages, targetList) {
   h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderDropEstimate(totalRuns);
   h += excessRows.length > 0
-    ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">余りが発生（不可避）</span> 要求数を満たす最小周回数の解では、以下の項目に余りが生じます。</p>`
-    : `<p style="margin:8px 0"><span class="badge badge-avoidable">余りなし</span> すべての項目がちょうど目標どおりに集まりました。</p>`;
+    ? `<p data-style="s027"><span class="badge badge-unavoidable">余りが発生（不可避）</span> 要求数を満たす最小周回数の解では、以下の項目に余りが生じます。</p>`
+    : `<p data-style="s027"><span class="badge badge-avoidable">余りなし</span> すべての項目がちょうど目標どおりに集まりました。</p>`;
+  h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'excess');
+  h += '</details>';
   h += renderStageRunsTable(stages, res);
   return h;
 }
@@ -1278,7 +957,7 @@ function renderMinRunsResult(res, stages, targetList) {
 function renderNoExcessResult(res, stages, targetList) {
   let h = `<h3 class="result-h">過不足ゼロモード（余り不許容）</h3>`;
   if (!res.feasible) {
-    h += '<p style="color:#f88">⚠ 計算できませんでした。</p>';
+    h += '<p data-style="s026">⚠ 計算できませんでした。</p>';
     return h;
   }
   const actuals   = computeActuals(stages, res);
@@ -1289,9 +968,11 @@ function renderNoExcessResult(res, stages, targetList) {
   h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderDropEstimate(totalRuns);
   h += shortRows.length > 0
-    ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">要求数に未達の項目あり</span> 余りを一切出さない制約の下では、以下の項目が要求数に届きません。</p>`
-    : `<p style="margin:8px 0"><span class="badge badge-avoidable">要求数達成</span> 余りを出さずにすべての項目が目標どおりに集まりました。</p>`;
+    ? `<p data-style="s027"><span class="badge badge-unavoidable">要求数に未達の項目あり</span> 余りを一切出さない制約の下では、以下の項目が要求数に届きません。</p>`
+    : `<p data-style="s027"><span class="badge badge-avoidable">要求数達成</span> 余りを出さずにすべての項目が目標どおりに集まりました。</p>`;
+  h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'shortfall');
+  h += '</details>';
   h += renderStageRunsTable(stages, res);
   return h;
 }
@@ -1299,7 +980,7 @@ function renderNoExcessResult(res, stages, targetList) {
 function renderPenalizedResult(res, stages, targetList) {
   let h = `<h3 class="result-h">ペナルティ調整モード（余り許容・ランク別スコア）</h3>`;
   if (!res.feasible) {
-    h += '<p style="color:#f88">⚠ 計算できませんでした。</p>';
+    h += '<p data-style="s026">⚠ 計算できませんでした。</p>';
     return h;
   }
   const actuals      = computeActuals(stages, res);
@@ -1315,9 +996,11 @@ function renderPenalizedResult(res, stages, targetList) {
   </div>`;
   h += renderDropEstimate(totalRuns);
   h += excessRows.length > 0
-    ? `<p style="margin:8px 0"><span class="badge badge-unavoidable">余りが発生</span> ランク別スコアに応じたペナルティ込みで、周回数＋ペナルティを最小化した結果です。</p>`
-    : `<p style="margin:8px 0"><span class="badge badge-avoidable">余りなし</span></p>`;
+    ? `<p data-style="s027"><span class="badge badge-unavoidable">余りが発生</span> ランク別スコアに応じたペナルティ込みで、周回数＋ペナルティを最小化した結果です。</p>`
+    : `<p data-style="s027"><span class="badge badge-avoidable">余りなし</span></p>`;
+  h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'excess');
+  h += '</details>';
   h += renderStageRunsTable(stages, res);
   return h;
 }
@@ -1363,7 +1046,7 @@ function runCalc() {
 
     resultDiv.innerHTML = html;
   } catch (err) {
-    resultDiv.innerHTML = `<p style="color:#f88">エラー: ${err.message}</p>`;
+    resultDiv.innerHTML = `<p data-style="s026">エラー: ${err.message}</p>`;
     console.error(err);
   }
 
@@ -1381,7 +1064,7 @@ async function init() {
     processData(stages);
   } catch (err) {
     document.getElementById('calcResult').innerHTML =
-      '<p style="color:#f88">装備データを読み込めませんでした。ローカル HTTP サーバー経由で開いてください。</p>';
+      '<p data-style="s026">装備データを読み込めませんでした。ローカル HTTP サーバー経由で開いてください。</p>';
     console.error(err);
   }
 }

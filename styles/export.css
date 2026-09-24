@@ -1,0 +1,71 @@
+:root {
+  font-family: system-ui, -apple-system, "Noto Sans JP", sans-serif;
+  color: #182b3e;
+  background: #f3f6fa;
+  font-size: 16px;
+  line-height: 1.6;
+  accent-color: #1768ce
+  }
+
+  * { box-sizing: border-box }
+  body { margin: 0 }
+
+  header {
+  background: #16324e;
+  color: white;
+  border-bottom: 4px solid #63cddd;
+      padding: 25px max(24px, calc((100vw - 1200px)/2))
+    }
+
+    header p { margin: 0; color: #a5d9e9; font-size: .875rem; letter-spacing: .12em }
+  h1 { font-size: 1.6rem; margin: 3px 0 }
+  main { max-width: 1248px; margin: auto; padding: 28px 24px 60px }
+
+  section {
+  background: white;
+  border: 1px solid #d8e1eb;
+  border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px
+    }
+  h2 { font-size: 1.15rem; margin: 0 0 14px; display: flex; align-items: center; gap: 12px }
+  .step { font-size: .8rem; background: #e5effb; color: #185aa8; padding: 3px 9px; border-radius: 5px }
+  .help { color: #506276; font-size: .9rem; margin: 8px 0 14px }
+    button {
+      font: inherit;
+      font-weight: 600;
+  border: 0;
+  border-radius: 7px;
+  background: #1768ce;
+  color: white;
+  cursor: pointer;
+  padding: 11px 22px
+  }
+
+  button:hover { background: #1256ad }
+  button:disabled { background: #9ba9b6; cursor: not-allowed }
+  input[type=file] { font: inherit; max-width: 100% }
+  input:focus-visible, button:focus-visible { outline: 3px solid #84c3ff; outline-offset: 2px }
+  .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px }
+  .file-area { padding: 14px 16px; background: #f7faff; border: 1px solid #d8e1eb; border-radius: 9px }
+  .status { min-height: 1.6em; color: #506276; font-size: .9rem; margin: 10px 0 0 }
+  .status.error { color: #a73c30 }
+  footer { color: #64768a; font-size: .875rem; text-align: center }
+
+  .tool-nav { background: #fff; border-bottom: 1px solid #d8e1eb; box-shadow: 0 2px 8px rgb(22 50 78 / 8%) }
+  .tool-nav-inner { max-width: 1248px; margin: auto; padding: 0 24px; display: flex; align-items: stretch; overflow-x: auto }
+  .tool-nav-brand { flex: 0 0 auto; align-self: center; margin-right: 18px; color: #16324e; font-size: .78rem; font-weight: 700; letter-spacing: .08em }
+  .tool-nav a { flex: 0 0 auto; padding: 12px 14px 10px; border-bottom: 3px solid transparent; color: #506276; font-size: .9rem; font-weight: 600; text-decoration: none; white-space: nowrap }
+  .tool-nav a:hover { background: #f3f8fd; color: #1768ce }
+  .tool-nav a[aria-current="page"] { border-color: #1768ce; color: #1768ce; background: #eef6ff }
+  .tool-nav a:focus-visible { outline: 3px solid #84c3ff; outline-offset: -3px }
+    @media(max-width:700px) {
+      main { padding: 18px 12px }
+      header { padding: 18px 16px }
+  section { padding: 18px 14px }
+  .tool-nav-inner { padding: 0 12px }
+  .tool-nav-brand { margin-right: 8px }
+    }
+
+/* Former inline declarations, kept in this page's stylesheet. */
+[data-style="s001"] { margin-top:14px }
