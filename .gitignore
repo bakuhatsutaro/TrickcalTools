@@ -1,5 +1,5 @@
 # Obsolete local versions
-_legacy_*.html
+legacy/
 
 # Local game-state exports
 *.json
