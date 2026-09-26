@@ -37,7 +37,7 @@
 <!-- Calculate -->
 <div class="card">
   <h2 data-step="02">最適化計算</h2>
-  <p data-style="s003">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。</p>
+  <p data-style="s003">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。周回数は小数を許す理論値です（整数周回での達成・余りなしを保証するものではありません）。</p>
   <div id="calcModeGrid" data-style="s004">
     <label data-style="s005">
       <input type="radio" name="calcMode" value="normal" checked onchange="onCalcModeChange()" data-style="s006">
@@ -410,10 +410,6 @@ function getStageReward(stage) {
   return (chapter * 100 + number) / 1_000_000_000;
 }
 
-function getStageObjective(stage, baseCost) {
-  return baseCost - getStageReward(stage);
-}
-
 function isLaterStage(candidate, current) {
   const [candidateChapter, candidateNumber] = getStagePosition(candidate.stage);
   const [currentChapter, currentNumber] = getStagePosition(current.stage);
@@ -471,7 +467,7 @@ function pct(x, total) {
 //
 // 過不足ゼロモード: 余り不許容・不足最小化
 //   制約: Σ x_s * [drop(s)=key] + short_key = target_key （short_key ≥ 0 のため余りは発生しない）
-//   目的: min Σ short_key（同点なら周回数が少ない解を優先）
+//   目的: 不足量最小 → その最適値を固定して周回数最小 → 両方を固定して後半ステージ優先
 //
 // ペナルティ調整モード: 余り許容＋ランク別ペナルティ（最小周回数モードの修正版）
 //   制約: Σ x_s * [drop(s)=key] − excess_key = target_key （excess_key ≥ 0 が余り量）
@@ -529,7 +525,7 @@ function buildModelMinRuns(stages, activeList) {
   for (const item of activeList) constraints[`min_${item.key}`] = { min: item.target };
 
   for (const s of stages) {
-    const v = { obj: getStageObjective(s.stage, 1) };
+    const v = { obj: 1 }; // 後半ステージの優先は主目的の最適値を固定した第2段階で行う
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
@@ -549,7 +545,7 @@ function buildModelMinShortfall(stages, activeList) {
   for (const item of activeList) constraints[`dev_${item.key}`] = { equal: item.target };
 
   for (const s of stages) {
-    const v = { obj: getStageObjective(s.stage, 1e-3) }; // 不足量が同じなら周回数が少ない解を優先
+    const v = { obj: 0 }; // 第1段階では不足量だけを最小化する
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
@@ -573,7 +569,7 @@ function buildModelPenalizedExcess(stages, activeList) {
   for (const item of activeList) constraints[`dev_${item.key}`] = { equal: item.target };
 
   for (const s of stages) {
-    const v = { obj: getStageObjective(s.stage, 1) };
+    const v = { obj: 1 }; // 後半ステージの優先は主目的の最適値を固定した第2段階で行う
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
@@ -587,6 +583,126 @@ function buildModelPenalizedExcess(stages, activeList) {
   }
 
   return { optimize: 'obj', opType: 'min', constraints, variables };
+}
+
+// ─── 2段階最適化（通常・詳細モード） ──────────────────────
+const LP_PRECISION = 1e-9;
+const LP_CHECK_TOLERANCE = 1e-6;
+
+function objectiveValue(model, result) {
+  return Object.entries(model.variables).reduce((sum, [name, v]) =>
+    sum + (v[model.optimize] || 0) * (result[name] || 0), 0);
+}
+
+// solver はモデルを変更し得るため、毎回コピーして渡す。
+function solveModel(model) {
+  return solver.Solve(JSON.parse(JSON.stringify(model)), LP_PRECISION);
+}
+
+function satisfiesModel(model, result) {
+  if (!result.feasible || result.bounded === false) return false;
+  for (const name of Object.keys(model.variables)) {
+    const value = result[name] === undefined ? 0 : result[name];
+    if (!Number.isFinite(value) || value < -LP_CHECK_TOLERANCE) return false;
+  }
+  return Object.entries(model.constraints).every(([key, bounds]) => {
+    const value = Object.entries(model.variables).reduce((sum, [name, v]) =>
+      sum + (v[key] || 0) * (result[name] || 0), 0);
+    return Number.isFinite(value) &&
+      (bounds.min === undefined || value >= bounds.min - LP_CHECK_TOLERANCE) &&
+      (bounds.max === undefined || value <= bounds.max + LP_CHECK_TOLERANCE) &&
+      (bounds.equal === undefined || Math.abs(value - bounds.equal) <= LP_CHECK_TOLERANCE);
+  });
+}
+
+function solveWithStagePreference(model, stages) {
+  const first = solveModel(model);
+  if (!first.feasible) return first;
+  if (!satisfiesModel(model, first)) throw new Error('第1段階の解が制約を満たしていません。入力値を確認してください。');
+  // result.result の丸めに依存せず、変数から主目的の値を再計算する。
+  const optimum = objectiveValue(model, first);
+  first.result = optimum;
+  const secondModel = JSON.parse(JSON.stringify(model));
+  secondModel.constraints.fixed_primary_objective = { equal: optimum };
+  for (const v of Object.values(secondModel.variables)) {
+    v.fixed_primary_objective = v[model.optimize] || 0;
+    v[model.optimize] = 0;
+  }
+  for (const stage of stages) {
+    // 主目的とは混ぜないので、比較しやすい桁の報酬を使用する。
+    secondModel.variables[getStageVariableName(stage)][model.optimize] =
+      -getStageReward(stage.stage) * 1_000_000;
+  }
+  try {
+    const second = solveModel(secondModel);
+    if (satisfiesModel(secondModel, second)) {
+      second.result = objectiveValue(model, second); // 表示値は元の主目的
+      return second;
+    }
+  } catch (err) {
+    console.warn('後半ステージ優先の計算に失敗しました。', err);
+  }
+  first.optimizationWarning = '後半ステージ優先の計算で最適値または制約を確認できなかったため、第1段階の最適解を表示しています。';
+  return first;
+}
+
+// 余り禁止モード: 不足量 → 周回数 → 後半ステージの順に最適化する。
+function solveMinShortfall(stages, targetList) {
+  const model = buildModelMinShortfall(stages, targetList);
+  const first = solveModel(model);
+  if (!first.feasible) return first;
+  if (!satisfiesModel(model, first)) throw new Error('不足最小化の解が制約を満たしていません。入力値を確認してください。');
+  const optimum = objectiveValue(model, first);
+  first.result = optimum;
+  const runsModel = JSON.parse(JSON.stringify(model));
+  runsModel.constraints.fixed_shortfall = { equal: optimum };
+  for (const v of Object.values(runsModel.variables)) {
+    v.fixed_shortfall = v.obj || 0;
+    v.obj = 0;
+  }
+  for (const stage of stages) runsModel.variables[getStageVariableName(stage)].obj = 1;
+  try {
+    // 既存の2段階処理を再利用。第3段階にも不足量固定の制約を引き継ぐ。
+    const result = solveWithStagePreference(runsModel, stages);
+    if (satisfiesModel(runsModel, result)) {
+      result.result = objectiveValue(model, result); // 元の主目的（不足量）
+      if (result.optimizationWarning) result.optimizationWarning = '後半ステージ優先の計算を確認できなかったため、不足量と周回数を順に最小化した解を表示しています。';
+      return result;
+    }
+  } catch (err) {
+    console.warn('不足量を固定した周回数最小化に失敗しました。', err);
+  }
+  first.optimizationWarning = '不足量を固定した周回数最小化を確認できなかったため、不足量のみを最小化した解を表示しています。';
+  return first;
+}
+
+// 余りが出た場合だけ、全項目が目標と等しい解の存在を直接確認する。
+// 各周回2個・非負ペナルティなら、余りなし解が存在するのに余るのは矛盾。
+function checkZeroExcess(result, stages, targetList) {
+  if (!result.feasible) return;
+  const actuals = computeActuals(stages, result);
+  if (!targetList.some(it => (actuals[it.key] || 0) - it.target > 0.01)) return;
+  const exactModel = buildModelMinShortfall(stages, targetList);
+  for (const name of Object.keys(exactModel.variables)) {
+    if (name.startsWith('short_')) delete exactModel.variables[name];
+    else exactModel.variables[name].obj = 1;
+  }
+  try {
+    const exact = solveModel(exactModel);
+    if (satisfiesModel(exactModel, exact)) result.zeroExcessFeasible = true;
+    else if (exact.feasible === false) result.zeroExcessFeasible = false;
+  } catch (err) {
+    console.warn('余りなし解の確認に失敗しました。', err);
+  }
+}
+
+function renderOptimizationWarnings(result) {
+  let h = '';
+  if (result.optimizationWarning) h += `<p class="infeasible-warning">⚠ ${result.optimizationWarning}</p>`;
+  if (result.zeroExcessFeasible === true) {
+    h += '<p class="infeasible-warning">⚠ 余りなしで目標を達成できる別の解が存在しますが、表示中の解には余りがあります。各周回2個ドロップの前提では数値誤差やデータの不整合が疑われます。この結果の余りを「不可避」とは判断しないでください。</p>';
+  }
+  return h;
 }
 
 // ─── 計算結果の描画 ─────────────────────────────────────────
@@ -648,8 +764,9 @@ function renderMinRunsResult(res, stages, targetList) {
 
   h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderDropEstimate(totalRuns);
+  h += renderOptimizationWarnings(res);
   h += excessRows.length > 0
-    ? `<p data-style="s027"><span class="badge badge-unavoidable">余りが発生（不可避）</span> 要求数を満たす最小周回数の解では、以下の項目に余りが生じます。</p>`
+    ? `<p data-style="s027"><span class="badge badge-unavoidable">${res.zeroExcessFeasible === false ? '余りが発生（連続量モデルでも不可避）' : '余りが発生'}</span> この解では以下の項目に余りが生じます。${res.zeroExcessFeasible === undefined ? '余りなし解の有無は確認できませんでした。' : ''}</p>`
     : `<p data-style="s027"><span class="badge badge-avoidable">余りなし</span> すべての項目がちょうど目標どおりに集まりました。</p>`;
   h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'excess');
@@ -671,6 +788,7 @@ function renderNoExcessResult(res, stages, targetList) {
 
   h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderDropEstimate(totalRuns);
+  h += renderOptimizationWarnings(res);
   h += shortRows.length > 0
     ? `<p data-style="s027"><span class="badge badge-unavoidable">要求数に未達の項目あり</span> 余りを一切出さない制約の下では、以下の項目が要求数に届きません。</p>`
     : `<p data-style="s027"><span class="badge badge-avoidable">要求数達成</span> 余りを出さずにすべての項目が目標どおりに集まりました。</p>`;
@@ -691,7 +809,7 @@ function renderPenalizedResult(res, stages, targetList) {
   const totalRuns    = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
   const rows         = buildKeyRows(targetList, actuals);
   const excessRows   = rows.filter(r => r.actual - r.target > 0.01);
-  const totalPenalty = excessRows.reduce((s, r) => s + (r.actual - r.target) * penaltyForRank(r.rank), 0);
+  const totalPenalty = rows.reduce((s, r) => s + Math.max(0, r.actual - r.target) * penaltyForRank(r.rank), 0);
 
   h += `<div class="result-summary">
     <div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div>
@@ -699,8 +817,9 @@ function renderPenalizedResult(res, stages, targetList) {
     <div class="kv"><span>目的関数値（周回数＋ペナルティ）</span><span>${sig3(res.result || 0)}</span></div>
   </div>`;
   h += renderDropEstimate(totalRuns);
+  h += renderOptimizationWarnings(res);
   h += excessRows.length > 0
-    ? `<p data-style="s027"><span class="badge badge-unavoidable">余りが発生</span> ランク別スコアに応じたペナルティ込みで、周回数＋ペナルティを最小化した結果です。</p>`
+    ? `<p data-style="s027"><span class="badge badge-unavoidable">余りが発生</span> ランク別スコアに応じたペナルティ込みで、周回数＋ペナルティを最小化し、その最適値を固定して後半ステージを優先した結果です。${res.zeroExcessFeasible === undefined ? '余りなし解の有無は確認できませんでした。' : ''}</p>`
     : `<p data-style="s027"><span class="badge badge-avoidable">余りなし</span></p>`;
   h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'excess');
@@ -738,13 +857,15 @@ function runCalc() {
 
     const mode = getSelectedCalcMode();
     if (mode === 'no-extra') {
-      const res = solver.Solve(buildModelMinShortfall(currentStages, noExcessList));
+      const res = solveMinShortfall(currentStages, noExcessList);
       html += renderNoExcessResult(res, currentStages, targetList);
     } else if (mode === 'advanced') {
-      const res = solver.Solve(buildModelPenalizedExcess(currentStages, penalizedList));
+      const res = solveWithStagePreference(buildModelPenalizedExcess(currentStages, penalizedList), currentStages);
+      checkZeroExcess(res, currentStages, targetList);
       html += renderPenalizedResult(res, currentStages, targetList);
     } else {
-      const res = solver.Solve(buildModelMinRuns(currentStages, activeList));
+      const res = solveWithStagePreference(buildModelMinRuns(currentStages, activeList), currentStages);
+      checkZeroExcess(res, currentStages, targetList);
       html += renderMinRunsResult(res, currentStages, targetList);
     }
 
