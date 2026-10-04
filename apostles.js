@@ -42,7 +42,7 @@ const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
   ['Rim', 3, '憂鬱', '攻撃', '前列', '幽霊'], ['Levi', 3, '憂鬱', '攻撃', '中列', '魔女'],
   ['Chopi', 2, '憂鬱', '攻撃', '中列', '獣人'], ['Barie', 2, '憂鬱', '支援', '後列', '魔女'],
   ['Festa', 2, '憂鬱', '支援', '前列', 'エルフ'], ['Veroo', 1, '憂鬱', '攻撃', '中列', '幽霊'],
-  ['Joanne', 3, '', '支援', '', '妖精'],
+  ['Joanne', 3, '裏面', '支援', '全ての列', '妖精'],
 ].map(([englishName, initialRarity, personality, role, position, race]) =>
   [englishName, { initialRarity, personality, role, position, race }]
 ));

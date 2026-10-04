@@ -394,11 +394,16 @@
       if (!apostle) return false;
       const values = {
         kana: kanaGroupFor(record.name), rarity: String(apostle.initialRarity),
-        personality: apostle.personality, role: apostle.role, position: apostle.position,
+        personality: record.name === 'ジョアン' ? ['純粋', '憂鬱'] : [apostle.personality],
+        role: apostle.role,
+        position: apostle.position === '全ての列' ? ['前列', '中列', '後列'] : [apostle.position],
         race: apostle.race, attackType: apostle.attackType,
       };
       return FILTER_CATEGORIES.every(category =>
-        activeFilters[category].size === 0 || activeFilters[category].has(values[category]));
+        activeFilters[category].size === 0 ||
+        (Array.isArray(values[category])
+          ? values[category].some(value => activeFilters[category].has(value))
+          : activeFilters[category].has(values[category])));
     }
 
     function updateFilterButtons() {

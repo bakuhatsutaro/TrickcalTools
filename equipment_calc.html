@@ -363,11 +363,17 @@
 
     function recordMatchesFilters(a) {
       const values = {
-        kana: kanaGroupFor(a.name), rarity: String(a.initialRarity), personality: a.personality,
-        role: a.role, position: a.position, race: a.race, attackType: a.attackType,
+        kana: kanaGroupFor(a.name), rarity: String(a.initialRarity),
+        personality: a.name === 'ジョアン' ? ['純粋', '憂鬱'] : [a.personality],
+        role: a.role,
+        position: a.position === '全ての列' ? ['前列', '中列', '後列'] : [a.position],
+        race: a.race, attackType: a.attackType,
       };
       return FILTER_CATEGORIES.every(category =>
-        activeFilters[category].size === 0 || activeFilters[category].has(values[category]));
+        activeFilters[category].size === 0 ||
+        (Array.isArray(values[category])
+          ? values[category].some(value => activeFilters[category].has(value))
+          : activeFilters[category].has(values[category])));
     }
 
     function updateFilterButtons() {
