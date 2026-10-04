@@ -12,6 +12,7 @@ const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
   ['Allet', 2, '純粋', '守備', '前列', 'エルフ'], ['Sari', 2, '純粋', '攻撃', '中列', '幽霊'],
   ['BigWood', 2, '純粋', '守備', '前列', '精霊'], ['Kyuri', 1, '純粋', '支援', '中列', '妖精'],
   ['Aya', 3, '冷静', '攻撃', '中列', '魔女'], ['Ed', 3, '冷静', '守備', '前列', 'エルフ'],
+  ['Kommy(swimsuit)', 3, '冷静', '支援', '中列', '獣人'],
   ['Amelia', 3, '冷静', '支援', '後列', 'エルフ'], ['Elena', 3, '冷静', '攻撃', '中列', 'エルフ'],
   ['Sylla', 3, '冷静', '攻撃', '後列', '精霊'], ['Jade', 3, '冷静', '攻撃', '中列', '竜族'],
   ['Barong', 3, '冷静', '攻撃', '前列', '幽霊'], ['Picora', 3, '冷静', '支援', '後列', '魔女'],
@@ -58,7 +59,8 @@ const APOSTLE_DATABASE = {
     ['Ashur', 'エシュール', '魔法'], ['Espi', 'エスピー', '魔法'], ['Epica', 'エピカ', '物理'], ['Erpin', 'エルフィン', '魔法'],
     ['Elena', 'エレナ', '物理'], ['Gabia', 'ガヴィア', '魔法'], ['Carren', 'カレン', '魔法'], ['Canna', 'カンナ', '物理'],
     ['Kidian', 'ギデオン', '物理'], ['Kyarot', 'キャロット', '魔法'], ['Kyuri', 'キュウイ', '魔法'], ['Chloe', 'クロエ', '魔法'],
-    ['Kommy', 'コミー', '物理'], ['Sari', 'サリー', '物理'], ['Sylla', 'シーラ', '物理'], ['Shaydi', 'シェイディ', '物理'],
+    ['Kommy', 'コミー', '物理'], ['Kommy(swimsuit)', 'コミー（水着）', '魔法'],
+    ['Sari', 'サリー', '物理'], ['Sylla', 'シーラ', '物理'], ['Shaydi', 'シェイディ', '物理'],
     ['Jade', 'ジェイド', '魔法'], ['Xion', 'シオン・ザ・DB', '物理', 'xXionx'], ['Sist', 'シスト', '物理'], ['Shoupan', 'シュパン', '魔法'],
     ['Jubee', 'ジュビー', '物理'], ['Silphir', 'シルフィール', '物理'], ['Snorky', 'スノキー', '物理'], ['Speaki', 'スピッキー', '魔法'],
     ['Selene', 'セリーネ', '魔法'], ['Daya', 'ダーヤ', '魔法'], ['Taida', 'タイダー', '物理'], ['Chopi', 'チョッピー', '物理'],
@@ -80,6 +82,9 @@ const APOSTLE_DATABASE = {
 
 function findApostle(value) {
   const key = normalizeLine(String(value)).toLocaleLowerCase('ja');
+  if (key.includes('kommy') && key.includes('swim')) {
+    return APOSTLE_DATABASE.apostles['Kommy(swimsuit)'];
+  }
   return Object.values(APOSTLE_DATABASE.apostles).find(apostle =>
     [apostle.id, apostle.wikiEnglishName, apostle.nameJa]
       .some(name => normalizeLine(name).toLocaleLowerCase('ja') === key));

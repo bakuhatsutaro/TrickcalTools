@@ -212,9 +212,11 @@
         const line = normalizeLine(raw);
         if (!line) return;
         const lineNumber = index + 1;
-        const name = line.split(' ')[0];
+        const firstName = line.split(' ')[0];
         // 指定どおり、使徒名を含む行全体の最初の数字を採用します。
         const rankMatch = /[0-9]+/.exec(line);
+        const namePrefix = line.slice(0, rankMatch?.index ?? line.length).trim();
+        const name = findApostle(namePrefix)?.id === 'Kommy(swimsuit)' ? namePrefix : firstName;
         const rank = rankMatch ? rankMatch[0] : '';
         let rest = line.slice(name.length).trim();
         if (!rankMatch) {
@@ -283,7 +285,7 @@
         if (!isObject(state) || !Number.isSafeInteger(state.rank) || state.rank < 1 || !isObject(state.equipment)) {
           throw new Error(`使徒「${id}」のランクまたは装備データが不正です。一覧は変更していません。`);
         }
-        const databaseEntry = APOSTLE_DATABASE.apostles[id];
+        const databaseEntry = APOSTLE_DATABASE.apostles[id] || findApostle(id);
         const attackStats = ['物理攻撃', '魔法攻撃'].filter(key => Object.hasOwn(state.equipment, key));
         if (attackStats.length === 0) throw new Error(`使徒「${id}」の武器情報がありません。`);
         const equippedAttackStats = attackStats.filter(key => state.equipment[key]?.enabled === true);
@@ -316,7 +318,7 @@
         if (owned) equipmentOwned++;
         records.push({
           name, rank: String(state.rank), equipment,
-          owned, sourceId: id, attackType
+          owned, sourceId: databaseEntry?.id || id, attackType
         });
       }
       if (unknownIds) warnings.push(`${unknownIds}人は使徒データベースに未登録のためIDを表示しています。`);
