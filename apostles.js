@@ -44,7 +44,7 @@ const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
   ['Chopi', 2, '憂鬱', '攻撃', '中列', '獣人'], ['Barie', 2, '憂鬱', '支援', '後列', '魔女'],
   ['Festa', 2, '憂鬱', '支援', '前列', 'エルフ'], ['Veroo', 1, '憂鬱', '攻撃', '中列', '幽霊'],
   ['Joanne', 3, '裏面', '支援', '全ての列', '妖精'],
-  ['Lethe', 2, '', '', '', '幽霊'],
+  ['Lethe', 2, '冷静', '守備', '前列', '幽霊'],
 ].map(([englishName, initialRarity, personality, role, position, race]) =>
   [englishName, { initialRarity, personality, role, position, race }]
 ));
@@ -74,7 +74,7 @@ const APOSTLE_DATABASE = {
     ['Maison', 'メゾン', '物理'], ['Meluna', 'メロナ', '魔法'], ['Momo', 'モモ', '魔法'], ['Yumimi', 'ユミミ', '物理'],
     ['Yomi', 'ヨミ', '魔法'], ['Risty', 'リスティ', '物理'], ['Leets', 'リッツ', '物理'], ['Renewa', 'リニュア', '物理'],
     ['Rim', 'リム', '物理'], ['Rudd', 'ルード', '物理'], ['Rufo', 'ルポ', '物理'], ['Layze', 'レイジー', '物理'],
-    ['Levi', 'レヴィ', '物理'], ['Lethe', 'レーテー', ''], ['Rohne', 'ローネ', '物理'], ['Rollett', 'ロレット', '魔法'], ['Pira', 'ピラ', '物理'],
+    ['Levi', 'レヴィ', '物理'], ['Lethe', 'レーテー', '物理'], ['Rohne', 'ローネ', '物理'], ['Rollett', 'ロレット', '魔法'], ['Pira', 'ピラ', '物理'],
     ['Sherum', 'シェルム', '魔法'], ['Barie', 'バリエ', '魔法'], ['Joanne', 'ジョアン', '物理'],
   ].map(([id, nameJa, attackType, wikiEnglishName = id]) => [id, {
     id, nameJa, attackType, wikiEnglishName, ...APOSTLE_PROFILE_BY_ENGLISH[wikiEnglishName],
