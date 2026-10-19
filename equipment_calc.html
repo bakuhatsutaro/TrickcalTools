@@ -160,7 +160,13 @@
         if (parsed && typeof parsed === 'object') {
           selfState.req01 = parsed.req01 && typeof parsed.req01 === 'object' ? parsed.req01 : {};
           selfState.own02 = parsed.own02 && typeof parsed.own02 === 'object' ? parsed.own02 : {};
-          selfState.apostleTargets = parsed.apostleTargets && typeof parsed.apostleTargets === 'object' ? parsed.apostleTargets : {};
+          selfState.apostleTargets = {};
+          if (parsed.apostleTargets && typeof parsed.apostleTargets === 'object') {
+            // 旧IDで保存されたキーを現在のIDへ読み替えます。
+            for (const [key, value] of Object.entries(parsed.apostleTargets)) {
+              selfState.apostleTargets[findApostle(key)?.id ?? key] = value;
+            }
+          }
           selfState.includeUnownedInImport = parsed.includeUnownedInImport === true;
           selfState.req01Order = parsed.req01Order === 'bag' ? 'bag' : 'clockwise';
           selfState.req02Order = parsed.req02Order === 'clockwise' ? 'clockwise' : 'bag';

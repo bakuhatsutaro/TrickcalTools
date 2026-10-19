@@ -544,7 +544,7 @@
         }
         const registeredById = new Map(saved.registered
           .filter(record => isObject(record) && typeof record.sourceId === 'string')
-          .map(record => [record.sourceId, record]));
+          .map(record => [findApostle(record.sourceId)?.id ?? record.sourceId, record]));
         for (const record of registeredRecords) {
           const savedRecord = registeredById.get(record.sourceId);
           if (!savedRecord) continue;

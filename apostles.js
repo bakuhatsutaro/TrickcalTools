@@ -13,6 +13,7 @@ const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
   ['BigWood', 2, '純粋', '守備', '前列', '精霊'], ['Kyuri', 1, '純粋', '支援', '中列', '妖精'],
   ['Aya', 3, '冷静', '攻撃', '中列', '魔女'], ['Ed', 3, '冷静', '守備', '前列', 'エルフ'],
   ['Kommy(swimsuit)', 3, '冷静', '支援', '中列', '獣人'],
+  ['Guin', 3, '冷静', '支援', '前列', '獣人'],
   ['Amelia', 3, '冷静', '支援', '後列', 'エルフ'], ['Elena', 3, '冷静', '攻撃', '中列', 'エルフ'],
   ['Sylla', 3, '冷静', '攻撃', '後列', '精霊'], ['Jade', 3, '冷静', '攻撃', '中列', '竜族'],
   ['Barong', 3, '冷静', '攻撃', '前列', '幽霊'], ['Picora', 3, '冷静', '支援', '後列', '魔女'],
@@ -50,19 +51,22 @@ const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
 ));
 
 // 使徒データベース（トリッカルWiki「使徒一覧/未実装込み版」を2026-09-21に確認）。
-// キーは trickcal-stat-state の apostles で使われるIDです。
+// 第1要素のIDはWikiの英語名で、保存データのキーにも使います。
+// 第4要素は trickcal-stat-state の apostles で使われるキーが異なる場合の別名です。
+// 省略または空の場合はIDをそのまま使います。
 const APOSTLE_DATABASE = {
   source: 'https://wikiwiki.jp/thetrickal/%E4%BD%BF%E5%BE%92%E4%B8%80%E8%A6%A7/%E6%9C%AA%E5%AE%9F%E8%A3%85%E8%BE%BC%E3%81%BF%E7%89%88',
   checkedAt: '2026-09-21',
   apostles: Object.fromEntries([
     ['Amelia', 'アメリア', '物理'], ['Aya', 'アヤ', '魔法'], ['Alice', 'アリス', '魔法'], ['Allet', 'アレット', '物理'],
-    ['ED', 'イード', '魔法', 'Ed'], ['Ifrit', 'イフリート', '魔法'], ['Ui', 'ウイ', '魔法'], ['Vivi', 'ヴィヴィ', '魔法'],
+    ['Ed', 'イード', '魔法', 'ED'], ['Ifrit', 'イフリート', '魔法'], ['Ui', 'ウイ', '魔法'], ['Vivi', 'ヴィヴィ', '魔法'],
     ['Ashur', 'エシュール', '魔法'], ['Espi', 'エスピー', '魔法'], ['Epica', 'エピカ', '物理'], ['Erpin', 'エルフィン', '魔法'],
     ['Elena', 'エレナ', '物理'], ['Gabia', 'ガヴィア', '魔法'], ['Carren', 'カレン', '魔法'], ['Canna', 'カンナ', '物理'],
+    ['Guin', 'グウィン', '魔法'],
     ['Kidian', 'ギデオン', '物理'], ['Kyarot', 'キャロット', '魔法'], ['Kyuri', 'キュウイ', '魔法'], ['Chloe', 'クロエ', '魔法'],
-    ['Kommy', 'コミー', '物理'], ['Kommy(swimsuit)', 'コミー（水着）', '魔法'],
+    ['Kommy', 'コミー', '物理'], ['Kommy(swimsuit)', 'コミー（水着）', '魔法', 'KommySwim'],
     ['Sari', 'サリー', '物理'], ['Sylla', 'シーラ', '物理'], ['Shaydi', 'シェイディ', '物理'],
-    ['Jade', 'ジェイド', '魔法'], ['Xion', 'シオン・ザ・DB', '物理', 'xXionx'], ['Sist', 'シスト', '物理'], ['Shoupan', 'シュパン', '魔法'],
+    ['Jade', 'ジェイド', '魔法'], ['xXionx', 'シオン・ザ・DB', '物理', 'Xion'], ['Sist', 'シスト', '物理'], ['Shoupan', 'シュパン', '魔法'],
     ['Jubee', 'ジュビー', '物理'], ['Silphir', 'シルフィール', '物理'], ['Snorky', 'スノキー', '物理'], ['Speaki', 'スピッキー', '魔法'],
     ['Selene', 'セリーネ', '魔法'], ['Daya', 'ダーヤ', '魔法'], ['Taida', 'タイダー', '物理'], ['Chopi', 'チョッピー', '物理'],
     ['Diana', 'ディアナ', '魔法'], ['Tig', 'ティグ', '物理'], ['Naia', 'ナイア', '魔法'], ['Ner', 'ネル', '魔法'],
@@ -76,8 +80,8 @@ const APOSTLE_DATABASE = {
     ['Rim', 'リム', '物理'], ['Rudd', 'ルード', '物理'], ['Rufo', 'ルポ', '物理'], ['Layze', 'レイジー', '物理'],
     ['Levi', 'レヴィ', '物理'], ['Lethe', 'レーテー', '物理'], ['Rohne', 'ローネ', '物理'], ['Rollett', 'ロレット', '魔法'], ['Pira', 'ピラ', '物理'],
     ['Sherum', 'シェルム', '魔法'], ['Barie', 'バリエ', '魔法'], ['Joanne', 'ジョアン', '物理'],
-  ].map(([id, nameJa, attackType, wikiEnglishName = id]) => [id, {
-    id, nameJa, attackType, wikiEnglishName, ...APOSTLE_PROFILE_BY_ENGLISH[wikiEnglishName],
+  ].map(([id, nameJa, attackType, jsonKey]) => [id, {
+    id, nameJa, attackType, wikiEnglishName: id, jsonKey: jsonKey || id, ...APOSTLE_PROFILE_BY_ENGLISH[id],
   }]))
 };
 
@@ -87,7 +91,7 @@ function findApostle(value) {
     return APOSTLE_DATABASE.apostles['Kommy(swimsuit)'];
   }
   return Object.values(APOSTLE_DATABASE.apostles).find(apostle =>
-    [apostle.id, apostle.wikiEnglishName, apostle.nameJa]
+    [apostle.id, apostle.jsonKey, apostle.nameJa]
       .some(name => normalizeLine(name).toLocaleLowerCase('ja') === key));
 }
 
