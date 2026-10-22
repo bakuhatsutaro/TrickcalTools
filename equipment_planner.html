@@ -250,6 +250,8 @@ function importEquipmentCalc() {
       importedNeeds[`${i}_${rank}`] = Math.max(0, Math.round(need));
     }
   }
+  if (!confirm('02の必要数で周回計画の現在の入力をすべて置き換えます。よろしいですか？')) return;
+
   for (let i = 0; i < ITEM_TYPES.length; i++) {
     for (let rank = minRank; rank <= maxRank; rank++) {
       const input = document.getElementById(`req_${i}_${rank}`);
