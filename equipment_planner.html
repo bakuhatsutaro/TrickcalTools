@@ -180,7 +180,7 @@ function buildTargetInputs(minRank, maxRank) {
   // リセットボタン（この表内の数値入力をすべて0にします）
   let h = '';
   h += '<div data-style="s011">';
-  h += '<button type="button" onclick="importEquipmentCalc()" data-style="s012">必要量計算の結果をインポート</button>';
+  h += '<button type="button" onclick="importEquipmentCalc()" data-style="s012">02の必要数をインポート</button>';
   h += '<button type="button" onclick="resetTargets()" data-style="s013">リセット</button>';
   h += '<span data-style="s014">どちらも現在の数値は消去されます</span>';
   h += '</div>';
@@ -232,32 +232,29 @@ function importEquipmentCalc() {
     alert('equipment_calc の保存データが見つかりません。先に equipment_calc.html で必要数を入力してください。');
     return;
   }
-
-  const getSavedNumber = (group, i, rank) => Math.max(0, parseFloat((group || {})[`${i}_${rank}`]) || 0);
-  const blueprintTotals = {};
-  for (let i = 0; i < ITEM_TYPES.length; i++) {
-    blueprintTotals[i] = {};
-    for (let rank = 2; rank <= 9; rank++) blueprintTotals[i][rank] = 0;
-  }
-  for (let i = 0; i < ITEM_TYPES.length; i++) {
-    for (let targetRank = 2; targetRank <= 9; targetRank++) {
-      const equipmentCount = getSavedNumber(state.req01, i, targetRank);
-      const recipe = REQUIREMENTS_BY_TARGET_RANK[targetRank];
-      if (!equipmentCount || !recipe) continue;
-      for (const [blueprintRank, amount] of Object.entries(recipe)) {
-        blueprintTotals[i][blueprintRank] += equipmentCount * amount;
-      }
-    }
+  if (!state.blueprintNeeds || typeof state.blueprintNeeds !== 'object') {
+    alert('02の必要数が保存されていません。equipment_calc.html を開いて必要量を更新してから、もう一度インポートしてください。');
+    return;
   }
 
   const { minRank, maxRank } = currentAnalysis || {};
   if (minRank === undefined || maxRank === undefined) return;
+  const importedNeeds = {};
+  for (let i = 0; i < ITEM_TYPES.length; i++) {
+    for (let rank = minRank; rank <= maxRank; rank++) {
+      const need = Number(state.blueprintNeeds[`${i}_${rank}`]);
+      if (!Number.isFinite(need)) {
+        alert(`02の必要数（${ITEM_TYPES[i]} Rank ${rank}）が保存されていません。equipment_calc.html を開いて必要量を更新してから、もう一度インポートしてください。`);
+        return;
+      }
+      importedNeeds[`${i}_${rank}`] = Math.max(0, Math.round(need));
+    }
+  }
   for (let i = 0; i < ITEM_TYPES.length; i++) {
     for (let rank = minRank; rank <= maxRank; rank++) {
       const input = document.getElementById(`req_${i}_${rank}`);
       if (!input) continue;
-      const need = (blueprintTotals[i][rank] || 0) - getSavedNumber(state.own02, i, rank);
-      input.value = Math.max(0, need);
+      input.value = importedNeeds[`${i}_${rank}`];
     }
   }
   for (let rank = minRank; rank <= maxRank; rank++) setRankVis(rank, true);

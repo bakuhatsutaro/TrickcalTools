@@ -43,6 +43,11 @@
 
     h2 { font-size: 1.15rem; margin: 0 0 14px; display: flex; align-items: center; gap: 12px }
 
+    .subsection-title { font-size: 1rem; margin: 18px 0 6px }
+    .reserve-equipment { margin-top: 20px; padding-top: 10px; border-top: 1px solid #d8e1eb }
+    .reserve-equipment .subsection-title { margin-top: 0 }
+    .reserve-equipment .help { margin: 0 }
+
     .step {
       font-size: .8rem;
       background: #e5effb;

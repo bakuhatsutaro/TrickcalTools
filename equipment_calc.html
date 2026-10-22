@@ -27,10 +27,11 @@
     <div class="intro-card">ここでは<strong>01 各装備の必要数</strong>で不足している装備の個数を入力し、<strong>02 装備設計図の必要数および保有数</strong>で保有している装備設計図の個数を入力します。ここで入力した情報は<strong>周回計画</strong>で用いることができます。<strong>装備管理</strong>で入力した使徒データを用いる場合は、先に<strong>03 使徒の装備ランクの目標値</strong>を設定してください。</div>
     <section aria-labelledby="s01-title">
       <h2 id="s01-title"><span class="step">01</span>各装備の必要数</h2>
+      <h3 class="subsection-title">所持済み使徒の装備必要数</h3>
+      <p class="help">手動入力も可能です。非実装使徒のための予備の装備はこの下の<strong>予備の装備</strong>で入力することができます。ここで入力された使徒は、ランク1を除き、ランク2から現在の最高ランクまで育成することを想定します。装備設計図ではなく、必要な装備の数そのものを記入します。使徒データは下に表示されています（<a href="#s03-title">03 使徒の装備ランクの目標値</a>）。読み込みボタンを押すとデータは上書きされます。</p>
       <div class="actions">
         <button id="importFromApostlesBtn">使徒データから読み込み</button>
-        <button class="secondary" id="resetReq01Btn">装備必要量を0にリセット</button></br>
-        <p class="help">装備設計図ではなく、必要な装備の数そのものを記入します。使徒データは下に表示されています（<a href="#s03-title">03 使徒の装備ランクの目標値</a>）。読み込みボタンを押すとデータは上書きされます。手動入力も可能です</p>
+        <button class="secondary" id="resetReq01Btn">装備必要量を0にリセット</button>
       </div>
       <div class="actions" aria-label="01の装備表示順">
         <label><input type="radio" name="req01Order" value="bag"> 装備の並びをバッグ内の順序と一致させる</label>
@@ -38,6 +39,14 @@
       </div>
       <div class="table-wrap">
         <table class="grid-table" id="req01-table"></table>
+      </div>
+      <div class="reserve-equipment">
+        <h3 class="subsection-title">予備の装備</h3>
+        <div class="actions">
+          <label>物理武器 <input type="number" min="0" step="0.1" id="reservePhysical" aria-label="予備の物理武器を必要とする人数"> 人</label>
+          <label>魔法武器 <input type="number" min="0" step="0.1" id="reserveMagical" aria-label="予備の魔法武器を必要とする人数"> 人</label>
+          <span class="help">人数は小数点でも入力可能（第1位まで）</span>
+        </div>
       </div>
     </section>
 
@@ -148,7 +157,7 @@
 
     // ─── 自ツールの状態の保存・復元 ─────────────────────────
     let selfState = {
-      req01: {}, own02: {}, apostleTargets: {}, includeUnownedInImport: false,
+      req01: {}, own02: {}, reserveEquipment: {}, blueprintNeeds: {}, apostleTargets: {}, includeUnownedInImport: false,
       req01Order: 'clockwise', req02Order: 'bag'
     };
 
@@ -160,6 +169,10 @@
         if (parsed && typeof parsed === 'object') {
           selfState.req01 = parsed.req01 && typeof parsed.req01 === 'object' ? parsed.req01 : {};
           selfState.own02 = parsed.own02 && typeof parsed.own02 === 'object' ? parsed.own02 : {};
+          selfState.reserveEquipment = parsed.reserveEquipment && typeof parsed.reserveEquipment === 'object'
+            ? parsed.reserveEquipment : {};
+          selfState.blueprintNeeds = parsed.blueprintNeeds && typeof parsed.blueprintNeeds === 'object'
+            ? parsed.blueprintNeeds : {};
           selfState.apostleTargets = {};
           if (parsed.apostleTargets && typeof parsed.apostleTargets === 'object') {
             // 旧IDで保存されたキーを現在のIDへ読み替えます。
@@ -185,8 +198,17 @@
 
     // ─── 01: 各装備の必要数グリッド ─────────────────────────
     function reqKey(i, r) { return `${i}_${r}`; }
-    function getReq01(i, r) { return parseFloat(selfState.req01[reqKey(i, r)]) || 0; }
-    function setReq01(i, r, v) { selfState.req01[reqKey(i, r)] = Math.max(0, Math.round(v) || 0); }
+    function normalizeTenth(value) {
+      const number = Number.parseFloat(value);
+      return Number.isFinite(number) ? Math.max(0, Math.round((number + Number.EPSILON) * 10) / 10) : 0;
+    }
+    function normalizeInteger(value) {
+      const number = Number.parseFloat(value);
+      return Number.isFinite(number) ? Math.max(0, Math.round(number)) : 0;
+    }
+    function getReq01(i, r) { return normalizeTenth(selfState.req01[reqKey(i, r)]); }
+    function setReq01(i, r, v) { selfState.req01[reqKey(i, r)] = normalizeTenth(v); }
+    function getReserveEquipment(type) { return normalizeTenth(selfState.reserveEquipment[type]); }
 
     function renderReq01Table() {
       const table = document.getElementById('req01-table');
@@ -196,7 +218,7 @@
       for (let r = MAX_RANK; r >= MIN_RANK; r--) {
         h += `<tr><td>Rank ${r}</td>`;
         getDisplayOrder('req01').forEach(i => {
-          h += `<td><input type="number" min="0" step="1" id="req01_${i}_${r}" value="${getReq01(i, r)}"></td>`;
+          h += `<td><input type="number" min="0" step="0.1" id="req01_${i}_${r}" value="${getReq01(i, r)}"></td>`;
         });
         h += '</tr>';
       }
@@ -210,21 +232,36 @@
             saveSelfState();
             renderReq02Table();
           });
+          el.addEventListener('change', () => { el.value = getReq01(i, r); });
         }
       });
     }
 
     document.getElementById('resetReq01Btn').addEventListener('click', () => {
       ITEM_TYPES.forEach((t, i) => { for (let r = MIN_RANK; r <= MAX_RANK; r++) setReq01(i, r, 0); });
+      selfState.reserveEquipment = { physical: 0, magical: 0 };
+      document.getElementById('reservePhysical').value = 0;
+      document.getElementById('reserveMagical').value = 0;
       saveSelfState();
       renderReq01Table();
       renderReq02Table();
     });
 
+    ['physical', 'magical'].forEach(type => {
+      const input = document.getElementById(type === 'physical' ? 'reservePhysical' : 'reserveMagical');
+      input.value = getReserveEquipment(type);
+      input.addEventListener('input', () => {
+        selfState.reserveEquipment[type] = normalizeTenth(input.value);
+        saveSelfState();
+        renderReq02Table();
+      });
+      input.addEventListener('change', () => { input.value = getReserveEquipment(type); });
+    });
+
     // ─── 02: 装備設計図の必要数・保有数グリッド ─────────────
     function ownKey(i, r) { return `${i}_${r}`; }
-    function getOwn02(i, r) { return parseFloat(selfState.own02[ownKey(i, r)]) || 0; }
-    function setOwn02(i, r, v) { selfState.own02[ownKey(i, r)] = Math.max(0, Math.round(v) || 0); }
+    function getOwn02(i, r) { return normalizeInteger(selfState.own02[ownKey(i, r)]); }
+    function setOwn02(i, r, v) { selfState.own02[ownKey(i, r)] = normalizeInteger(v); }
 
     // 01の必要装備数から、ランクごとの必要設計図の総数を逆算する
     function computeBlueprintTotals() {
@@ -244,11 +281,41 @@
           }
         }
       });
+      const reserveByType = ITEM_TYPES.map((type, i) => {
+        if (i === 0) return getReserveEquipment('physical');
+        if (i === 1) return getReserveEquipment('magical');
+        return getReserveEquipment('physical') + getReserveEquipment('magical');
+      });
+      reserveByType.forEach((count, i) => {
+        if (!count) return;
+        for (let equipmentRank = MIN_RANK; equipmentRank <= MAX_RANK; equipmentRank++) {
+          const recipe = RECIPE[equipmentRank];
+          if (!recipe) continue;
+          for (const [bpRankStr, amount] of Object.entries(recipe)) {
+            const bpRank = parseInt(bpRankStr, 10);
+            totals[i][bpRank] += amount * count;
+          }
+        }
+      });
+      ITEM_TYPES.forEach((t, i) => {
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) totals[i][r] = Math.round(totals[i][r]);
+      });
       return totals;
+    }
+
+    function computeBlueprintNeeds(totals) {
+      const needs = {};
+      ITEM_TYPES.forEach((type, i) => {
+        for (let r = MIN_RANK; r <= MAX_RANK; r++) {
+          needs[ownKey(i, r)] = totals[i][r] - getOwn02(i, r);
+        }
+      });
+      return needs;
     }
 
     function renderReq02Table() {
       const totals = computeBlueprintTotals();
+      const needs = computeBlueprintNeeds(totals);
       const table = document.getElementById('req02-table');
       let h = '<thead><tr><th>設計図ランク</th>';
       getDisplayOrder('req02').forEach(i => { h += `<th>${getTypeLabel(i)}</th>`; });
@@ -256,9 +323,8 @@
       for (let r = MAX_RANK; r >= MIN_RANK; r--) {
         h += `<tr><td>Rank ${r}</td>`;
         getDisplayOrder('req02').forEach(i => {
-          const total = totals[i][r];
           const owned = getOwn02(i, r);
-          const need = total - owned;
+          const need = needs[ownKey(i, r)];
           h += `<td>
             <span class="need-cell${need === 0 ? ' zero' : ''}" id="need02_${i}_${r}">${need}</span>
             <div><input type="number" min="0" step="1" id="own02_${i}_${r}" value="${owned}" title="保有数（自由に調整可）"></div>
@@ -268,17 +334,21 @@
       }
       h += '</tbody>';
       table.innerHTML = h;
+      selfState.blueprintNeeds = needs;
+      saveSelfState();
       ITEM_TYPES.forEach((t, i) => {
         for (let r = MIN_RANK; r <= MAX_RANK; r++) {
           const el = document.getElementById(`own02_${i}_${r}`);
           el.addEventListener('input', () => {
             setOwn02(i, r, el.value);
-            saveSelfState();
             const needEl = document.getElementById(`need02_${i}_${r}`);
             const need = totals[i][r] - getOwn02(i, r);
+            selfState.blueprintNeeds[ownKey(i, r)] = need;
+            saveSelfState();
             needEl.textContent = need;
             needEl.classList.toggle('zero', need === 0);
           });
+          el.addEventListener('change', () => { el.value = getOwn02(i, r); });
         }
       });
     }
