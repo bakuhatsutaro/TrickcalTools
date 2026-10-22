@@ -249,7 +249,6 @@
 
     ['physical', 'magical'].forEach(type => {
       const input = document.getElementById(type === 'physical' ? 'reservePhysical' : 'reserveMagical');
-      input.value = getReserveEquipment(type);
       input.addEventListener('input', () => {
         selfState.reserveEquipment[type] = normalizeTenth(input.value);
         saveSelfState();
@@ -628,6 +627,8 @@
     // ─── 初期化 ──────────────────────────────────────────
     (function init() {
       loadSelfState();
+      document.getElementById('reservePhysical').value = getReserveEquipment('physical');
+      document.getElementById('reserveMagical').value = getReserveEquipment('magical');
       document.querySelector(`input[name="req01Order"][value="${selfState.req01Order}"]`).checked = true;
       document.querySelector(`input[name="req02Order"][value="${selfState.req02Order}"]`).checked = true;
       document.querySelectorAll('input[name="req01Order"]').forEach(input => {
