@@ -6,7 +6,8 @@ const APOSTLE_PROFILE_BY_ENGLISH = Object.fromEntries([
   ['Vivi', 3, '純粋', '守備', '前列', '竜族'], ['Erpin', 3, '純粋', '攻撃', '後列', '妖精'],
   ['Gabia', 3, '純粋', '支援', '中列', '精霊'], ['Kyarot', 3, '純粋', '支援', '後列', '妖精'],
   ['Sherum', 3, '純粋', '攻撃', '前列', '魔女'], ['Silphir', 3, '純粋', '攻撃', '中列', '竜族'],
-  ['Speaki', 3, '純粋', '攻撃', '後列', '幽霊'], ['Daya', 3, '純粋', '攻撃', '後列', '竜族'],
+  ['Speaki', 3, '純粋', '攻撃', '後列', '幽霊'], ['Maid Speaki', 3, '活発', '攻撃', '後列', '幽霊'],
+  ['Daya', 3, '純粋', '攻撃', '後列', '竜族'],
   ['Naia', 3, '純粋', '支援', '中列', '精霊'], ['Haley', 3, '純粋', '攻撃', '中列', 'エルフ'],
   ['Mago', 3, '純粋', '支援', '中列', '獣人'], ['Rohne', 3, '純粋', '守備', '前列', 'エルフ'],
   ['Allet', 2, '純粋', '守備', '前列', 'エルフ'], ['Sari', 2, '純粋', '攻撃', '中列', '幽霊'],
@@ -65,10 +66,12 @@ const APOSTLE_DATABASE = {
     ['Elena', 'エレナ', '物理'], ['Gabia', 'ガヴィア', '魔法'], ['Carren', 'カレン', '魔法'], ['Canna', 'カンナ', '物理'],
     ['Guin', 'グウィン', '魔法'],
     ['Kidian', 'ギデオン', '物理'], ['Kyarot', 'キャロット', '魔法'], ['Kyuri', 'キュウイ', '魔法'], ['Chloe', 'クロエ', '魔法'],
-    ['Kommy', 'コミー', '物理'], ['Kommy(swimsuit)', 'コミー（水着）', '魔法', 'KommySwim'],
+    ['Kommy', 'コミー', '物理'],
+    ['Kommy(swimsuit)', 'コミー（水着）', '魔法', 'KommySwim', /(?=.*\bkommy\b)(?=.*\bswim)/u],
     ['Sari', 'サリー', '物理'], ['Sylla', 'シーラ', '物理'], ['Shaydi', 'シェイディ', '物理'],
     ['Jade', 'ジェイド', '魔法'], ['xXionx', 'シオン・ザ・DB', '物理', 'Xion'], ['Sist', 'シスト', '物理'], ['Shoupan', 'シュパン', '魔法'],
     ['Jubee', 'ジュビー', '物理'], ['Silphir', 'シルフィール', '物理'], ['Snorky', 'スノキー', '物理'], ['Speaki', 'スピッキー', '魔法'],
+    ['Maid Speaki', 'スピッキー（メイド）', '魔法', undefined, /(?=.*\bmaid\b)(?=.*\bspeaki\b)/u],
     ['Selene', 'セリーネ', '魔法'], ['Daya', 'ダーヤ', '魔法'], ['Taida', 'タイダー', '物理'], ['Chopi', 'チョッピー', '物理'],
     ['Diana', 'ディアナ', '魔法'], ['Tig', 'ティグ', '物理'], ['Naia', 'ナイア', '魔法'], ['Ner', 'ネル', '魔法'],
     ['Butter', 'バター', '物理'], ['Patula', 'パトラ', '物理'], ['Barong', 'バロン', '魔法'], ['Picora', 'ピコラ', '魔法'],
@@ -82,19 +85,17 @@ const APOSTLE_DATABASE = {
     ['Rim', 'リム', '物理'], ['Rudd', 'ルード', '物理'], ['Rufo', 'ルポ', '物理'], ['Layze', 'レイジー', '物理'],
     ['Levi', 'レヴィ', '物理'], ['Lethe', 'レーテー', '物理'], ['Rohne', 'ローネ', '物理'], ['Rollett', 'ロレット', '魔法'], ['Pira', 'ピラ', '物理'],
     ['Sherum', 'シェルム', '魔法'], ['Barie', 'バリエ', '魔法'], ['Joanne', 'ジョアン', '物理'],
-  ].map(([id, nameJa, attackType, jsonKey]) => [id, {
-    id, nameJa, attackType, wikiEnglishName: id, jsonKey: jsonKey || id, ...APOSTLE_PROFILE_BY_ENGLISH[id],
+  ].map(([id, nameJa, attackType, jsonKey, matchPattern]) => [id, {
+    id, nameJa, attackType, wikiEnglishName: id, jsonKey: jsonKey || id, matchPattern, ...APOSTLE_PROFILE_BY_ENGLISH[id],
   }]))
 };
 
 function findApostle(value) {
   const key = normalizeLine(String(value)).toLocaleLowerCase('ja');
-  if (key.includes('kommy') && key.includes('swim')) {
-    return APOSTLE_DATABASE.apostles['Kommy(swimsuit)'];
-  }
   return Object.values(APOSTLE_DATABASE.apostles).find(apostle =>
     [apostle.id, apostle.jsonKey, apostle.nameJa]
-      .some(name => normalizeLine(name).toLocaleLowerCase('ja') === key));
+      .some(name => normalizeLine(name).toLocaleLowerCase('ja') === key) ||
+    apostle.matchPattern?.test(key));
 }
 
 function normalizeLine(value) {

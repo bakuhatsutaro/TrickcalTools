@@ -216,7 +216,8 @@
         // 指定どおり、使徒名を含む行全体の最初の数字を採用します。
         const rankMatch = /[0-9]+/.exec(line);
         const namePrefix = line.slice(0, rankMatch?.index ?? line.length).trim();
-        const name = findApostle(namePrefix)?.id === 'Kommy(swimsuit)' ? namePrefix : firstName;
+        const matchedPrefix = findApostle(namePrefix);
+        const name = matchedPrefix ? namePrefix : firstName;
         const rank = rankMatch ? rankMatch[0] : '';
         let rest = line.slice(name.length).trim();
         if (!rankMatch) {
