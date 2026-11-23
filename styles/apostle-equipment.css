@@ -418,6 +418,28 @@
       color: #8997a5
     }
 
+    .row-equipment-actions {
+      display: flex;
+      gap: 6px;
+      white-space: nowrap
+    }
+
+    .row-equipment-actions button {
+      padding: 6px 8px;
+      font-size: .85rem
+    }
+
+    .row-equipment-actions button:disabled {
+      background: #d8e1eb;
+      color: #8997a5;
+      cursor: not-allowed
+    }
+
+    #equipment-action-error {
+      color: #a12b32;
+      margin: 8px 0
+    }
+
     .file-area {
       /* 上下・左の余白を調整できます。必要ならJavaScriptや外部CSSで変数を書き換えてください。 */
       --fa-pt: 12px;
@@ -627,6 +649,12 @@
       /* center the rank input value */
       min-width: 40px;
       max-width: 50px;
+    }
+
+    #table-body td input.rank-input,
+    #unknown-body td input.rank-input {
+      width: 70px;
+      max-width: none
     }
 
     /* Do NOT center the main source input textarea - it MUST be left-aligned */
