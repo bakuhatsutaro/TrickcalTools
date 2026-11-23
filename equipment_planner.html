@@ -31,6 +31,7 @@
 <!-- Target counts -->
 <div class="card">
   <h2 data-step="01">必要個数入力</h2>
+  <p id="formStorageWarning" class="infeasible-warning" role="alert" hidden></p>
   <div id="targetsGrid"></div>
 </div>
 
@@ -90,8 +91,6 @@
 // ─── 固定データ ───────────────────────────────────────────
 const ITEM_TYPES = ['物理武器', '魔法武器', '鎧', '帽子', '煌めく装飾品', 'ブーツ', '華麗な装飾品'];
 const EMOJI_TYPES = ['⚔️', '🪄', '👕', '🎩', '💍', '👢', '📿'];
-const DEFAULT_MIN8    = [60, 40, 100, 100, 100, 100, 100];
-const DEFAULT_TARGETS = DEFAULT_MIN8.map(v => Math.round(v * 2.6));
 const DEFAULT_DROP_RATES = { dropRateLow: 84, dropRate10: 74 };
 
 function readDropRates() {
@@ -190,8 +189,7 @@ function buildTargetInputs(minRank, maxRank) {
   for (let r = maxRank; r >= minRank; r--) {
     h += `<tr id="rankRow_${r}"><td data-style="s018">Rank ${r}</td>`;
     ITEM_TYPES.forEach((t, i) => {
-      const def = r === maxRank ? DEFAULT_TARGETS[i] : (r === maxRank - 1 ? DEFAULT_MIN8[i] : 0);
-      h += `<td><input type="number" class="tgt-input" id="req_${i}_${r}" value="${def}" min="0" step="1"></td>`;
+      h += `<td><input type="number" class="tgt-input" id="req_${i}_${r}" value="0" min="0" step="1"></td>`;
     });
     h += '</tr>';
   }
@@ -319,55 +317,126 @@ function buildRankScoreInputs(minRank, maxRank) {
 
 // ─── 入力内容の自動保存（localStorage） ───────────────────────
 const FORM_STORAGE_KEY = 'trickcalTools.formState.v1';
+let savedFormState = {};
+let savedFormRaw = null;
+let formSavingBlocked = false;
+
+function showFormStorageWarning(message) {
+  const warning = document.getElementById('formStorageWarning');
+  warning.textContent = message;
+  warning.hidden = false;
+}
+
+function isFormStateObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 function saveFormState() {
-  const state = { req: {}, rankVis: {}, rankScore: {} };
+  if (formSavingBlocked) return;
+  const state = {
+    ...savedFormState,
+    req: { ...savedFormState.req },
+    rankVis: { ...savedFormState.rankVis },
+    rankScore: { ...savedFormState.rankScore },
+  };
   document.querySelectorAll('input[id^="req_"]').forEach(el => { state.req[el.id] = el.value; });
   document.querySelectorAll('[id^="rankVis_"]').forEach(el => { state.rankVis[el.id] = el.dataset.on !== 'false'; });
   document.querySelectorAll('input[id^="rankScore_"]').forEach(el => { state.rankScore[el.id] = el.value; });
-  state.dropRates = Object.fromEntries(Object.keys(DEFAULT_DROP_RATES).map(id => [id, document.getElementById(id).value]));
+  state.dropRates = {
+    ...savedFormState.dropRates,
+    ...Object.fromEntries(Object.keys(DEFAULT_DROP_RATES).map(id => [id, document.getElementById(id).value])),
+  };
 
   const modeRadio = document.querySelector('input[name="calcMode"]:checked');
   if (modeRadio) state.calcMode = modeRadio.value;
 
-  try { localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ストレージ利用不可は無視 */ }
+  try {
+    if (localStorage.getItem(FORM_STORAGE_KEY) !== savedFormRaw) {
+      formSavingBlocked = true;
+      showFormStorageWarning('保存データが別の画面で変更されたため、自動保存を停止しました。この画面の変更は保存されません。必要に応じて控えてから再読み込みしてください。');
+      return;
+    }
+    const raw = JSON.stringify(state);
+    localStorage.setItem(FORM_STORAGE_KEY, raw);
+    savedFormState = state;
+    savedFormRaw = raw;
+  } catch (error) {
+    showFormStorageWarning('自動保存できませんでした。ブラウザーの保存設定を確認してください。');
+    console.error(error);
+  }
 }
 
 function loadFormState() {
-  let state;
-  try { state = JSON.parse(localStorage.getItem(FORM_STORAGE_KEY)); } catch (e) { state = null; }
-  if (!state) return;
+  let state, raw;
+  try {
+    raw = localStorage.getItem(FORM_STORAGE_KEY);
+    if (raw === null) return;
+    state = JSON.parse(raw);
+    if (!isFormStateObject(state) ||
+      ['req', 'rankVis', 'rankScore', 'dropRates'].some(key =>
+        state[key] != null && !isFormStateObject(state[key]))) {
+      throw new Error('保存データの形式が正しくありません。');
+    }
+  } catch (error) {
+    formSavingBlocked = true;
+    showFormStorageWarning('周回計画の保存データを読み込めませんでした。必要個数は0で表示し、元データを保護するため自動保存を停止しています。データ保存画面でバックアップを確認してください。');
+    console.error(error);
+    return;
+  }
+  savedFormRaw = raw;
+  savedFormState = state;
+  let invalidData = false;
 
   if (state.req) {
     for (const [id, val] of Object.entries(state.req)) {
       const el = document.getElementById(id);
-      if (el) el.value = val;
+      if (typeof val !== 'string' && typeof val !== 'number') { invalidData = true; continue; }
+      if (el) {
+        el.value = val;
+        if (String(val) !== '' && el.value === '') { el.value = '0'; invalidData = true; }
+      }
     }
   }
   if (state.rankVis) {
     for (const [id, on] of Object.entries(state.rankVis)) {
+      if (typeof on !== 'boolean') { invalidData = true; continue; }
       setRankVis(parseInt(id.slice('rankVis_'.length)), on);
     }
   }
   if (state.rankScore) {
     for (const [id, val] of Object.entries(state.rankScore)) {
       const el = document.getElementById(id);
-      if (el) el.value = val;
-    }
-    if (state.dropRates && typeof state.dropRates === 'object') {
-      for (const id of Object.keys(DEFAULT_DROP_RATES)) {
-        if (typeof state.dropRates[id] === 'string' || typeof state.dropRates[id] === 'number') {
-          document.getElementById(id).value = state.dropRates[id];
-        }
+      if (typeof val !== 'string' && typeof val !== 'number') { invalidData = true; continue; }
+      if (el) {
+        el.value = val;
+        if (String(val) !== '' && el.value === '') { el.value = '0'; invalidData = true; }
       }
     }
   }
-
-  if (state.calcMode) {
+  if (state.dropRates) {
+    for (const id of Object.keys(DEFAULT_DROP_RATES)) {
+      if (Object.hasOwn(state.dropRates, id)) {
+        const val = state.dropRates[id];
+        if (typeof val !== 'string' && typeof val !== 'number') { invalidData = true; continue; }
+        const el = document.getElementById(id);
+        el.value = val;
+        if (String(val) !== '' && el.value === '') { el.value = DEFAULT_DROP_RATES[id]; invalidData = true; }
+      }
+    }
+  }
+  if (state.calcMode != null && state.calcMode !== '') {
     const legacyModes = { '1': 'normal', '2': 'no-extra', '3': 'advanced' };
     const calcMode = legacyModes[state.calcMode] || state.calcMode;
-    const radio = document.querySelector(`input[name="calcMode"][value="${calcMode}"]`);
-    if (radio) radio.checked = true;
+    if (['normal', 'no-extra', 'advanced'].includes(calcMode)) {
+      const radio = document.querySelector(`input[name="calcMode"][value="${calcMode}"]`);
+      if (radio) radio.checked = true;
+    } else {
+      invalidData = true;
+    }
+  }
+  if (invalidData) {
+    formSavingBlocked = true;
+    showFormStorageWarning('保存データの一部を読み込めませんでした。読み込めない必要個数は0で表示し、元データを保護するため自動保存を停止しています。データ保存画面でバックアップを確認してください。');
   }
 }
 
