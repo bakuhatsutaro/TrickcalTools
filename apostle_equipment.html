@@ -281,13 +281,15 @@
       if (types.some(type => !nonWeaponTypes.includes(type)) || new Set(types).size !== nonWeaponTypes.length) {
         throw new Error('JSONの装備対応が不正です。');
       }
+      // JSON取り込み時だけ別名を解決し、既存の未登録データの扱いは変えない。
+      const jsonIdAliases = new Map([['SpeakiMaid', 'Maid Speaki']]);
       const records = [], warnings = [];
       let unknownIds = 0, equipmentOwned = 0;
       for (const [id, state] of Object.entries(data.snapshot.apostles)) {
         if (!isObject(state) || !Number.isSafeInteger(state.rank) || state.rank < 1 || !isObject(state.equipment)) {
           throw new Error(`使徒「${id}」のランクまたは装備データが不正です。一覧は変更していません。`);
         }
-        const databaseEntry = APOSTLE_DATABASE.apostles[id] || findApostle(id);
+        const databaseEntry = APOSTLE_DATABASE.apostles[jsonIdAliases.get(id) || id] || findApostle(id);
         const attackStats = ['物理攻撃', '魔法攻撃'].filter(key => Object.hasOwn(state.equipment, key));
         if (attackStats.length === 0) throw new Error(`使徒「${id}」の武器情報がありません。`);
         const equippedAttackStats = attackStats.filter(key => state.equipment[key]?.enabled === true);
