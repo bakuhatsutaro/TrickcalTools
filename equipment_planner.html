@@ -37,7 +37,7 @@
 <!-- Calculate -->
 <div class="card">
   <h2 data-step="02">最適化計算</h2>
-  <p data-style="s003">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。周回数は小数を許す理論値です（整数周回での達成・余りなしを保証するものではありません）。</p>
+  <p data-style="s003">上の目標個数を設定し、計算モードを1つ選んでから計算実行ボタンを押してください。ドロップ率に基づく期待値を計算します。周回数は小数を許す理論値であり、実際の達成・余りなしを保証するものではありません。</p>
   <div id="calcModeGrid" data-style="s004">
     <label data-style="s005">
       <input type="radio" name="calcMode" value="normal" checked onchange="onCalcModeChange()" data-style="s006">
@@ -53,6 +53,14 @@
     </label>
   </div>
   <div id="rankScoreGrid" data-style="s008"></div>
+  <div class="drop-rates">
+    <p>ドロップ率</p>
+    <div class="drop-rate-inputs">
+      <label>ランク9まで <input type="number" id="dropRateLow" min="0" max="100" step="any" value="84"> %</label>
+      <label>ランク10 <input type="number" id="dropRate10" min="0" max="100" step="any" value="74"> %</label>
+    </div>
+    <p class="drop-rate-help">デフォルト値は作者のデータに基づきます。正確な確率は不明です。空欄にするとデフォルト値になります。</p>
+  </div>
   <button class="calc-btn" id="calcBtn" disabled onclick="runCalc()">計算実行</button>
   <div id="calcResult" data-style="s009"></div>
 </div>
@@ -77,54 +85,37 @@
   </details>
 </div>
 
+<script src="equipment-data.js"></script>
 <script>
 // ─── 固定データ ───────────────────────────────────────────
 const ITEM_TYPES = ['物理武器', '魔法武器', '鎧', '帽子', '煌めく装飾品', 'ブーツ', '華麗な装飾品'];
 const EMOJI_TYPES = ['⚔️', '🪄', '👕', '🎩', '💍', '👢', '📿'];
 const DEFAULT_MIN8    = [60, 40, 100, 100, 100, 100, 100];
 const DEFAULT_TARGETS = DEFAULT_MIN8.map(v => Math.round(v * 2.6));
+const DEFAULT_DROP_RATES = { dropRateLow: 84, dropRate10: 74 };
 
-// ─── パース ───────────────────────────────────────────────
-function parseItem(str) {
-  str = str.trim();
-  const uscore = str.indexOf('_');
-  if (uscore === -1) return null;
-  const id = parseInt(str.slice(0, uscore));
-  const typeAndRank = str.slice(uscore + 1);
-  // ランクは末尾の連続する数字
-  const m = typeAndRank.match(/(\d+)$/);
-  if (!m) return null;
-  const rank = parseInt(m[1]);
-  const type = typeAndRank.slice(0, typeAndRank.length - m[1].length);
-  return { id, type, rank };
-}
-
-function parseData(text) {
-  const stages = [];
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line) continue;
-    // タブ区切り、または2文字以上のスペース区切りに対応
-    const parts = line.split(/\t+|[ ]{2,}/);
-    if (parts.length < 3) continue;
-    const stage = parts[0].trim();
-    const drop1 = parseItem(parts[1]);
-    const drop2 = parseItem(parts[2]);
-    if (drop1 && drop2) stages.push({ stage, id: `stage_${stages.length}`, drops: [drop1, drop2] });
+function readDropRates() {
+  const rates = {};
+  for (const [id, defaultValue] of Object.entries(DEFAULT_DROP_RATES)) {
+    const input = document.getElementById(id);
+    if (input.validity.badInput) throw new Error('ドロップ率は0〜100の数値を入力してください。');
+    if (input.value === '') input.value = String(defaultValue);
   }
-  return stages;
+  for (const id of Object.keys(DEFAULT_DROP_RATES)) {
+    const input = document.getElementById(id);
+    const value = Number(input.value);
+    if (!Number.isFinite(value) || value < 0 || value > 100) {
+      throw new Error('ドロップ率は0〜100の数値を入力してください。');
+    }
+    rates[id] = value / 100;
+  }
+  return rates;
 }
 
-// ─── 分析 ─────────────────────────────────────────────────
-function analyzeData(stages) {
-  // 最高ランク・最低ランクを検出（目標入力グリッドの範囲に使用）
-  let maxRank = 0, minRank = Infinity;
-  for (const s of stages)
-    for (const d of s.drops) {
-      if (d.rank > maxRank) maxRank = d.rank;
-      if (d.rank < minRank) minRank = d.rank;
-    }
-  return { minRank, maxRank };
+function dropRateForRank(rank, rates) {
+  if (rank <= 9) return rates.dropRateLow;
+  if (rank === 10) return rates.dropRate10;
+  throw new Error(`ランク${rank}のドロップ率は未設定です。`);
 }
 
 // ─── 描画: ステージ一覧 ───────────────────────────────────
@@ -326,19 +317,6 @@ function buildRankScoreInputs(minRank, maxRank) {
   document.getElementById('rankScoreGrid').innerHTML = h;
 }
 
-// ─── 一人分を追加 ─────────────────────────────────────────
-// 装備1個をランクXまで強化するのに必要な設計図数（ランクごと。種類によらず共通）
-const REQUIREMENTS_BY_TARGET_RANK = {
-  9: { 9: 52, 8: 20 },
-  8: { 8: 46, 7: 18 },
-  7: { 7: 42 },
-  6: { 6: 36, 5: 14 },
-  5: { 5: 30, 4: 12 },
-  4: { 4: 20 },
-  3: { 3: 18, 2: 8 },
-  2: { 2: 10 },
-};
-
 // ─── 入力内容の自動保存（localStorage） ───────────────────────
 const FORM_STORAGE_KEY = 'trickcalTools.formState.v1';
 
@@ -347,6 +325,7 @@ function saveFormState() {
   document.querySelectorAll('input[id^="req_"]').forEach(el => { state.req[el.id] = el.value; });
   document.querySelectorAll('[id^="rankVis_"]').forEach(el => { state.rankVis[el.id] = el.dataset.on !== 'false'; });
   document.querySelectorAll('input[id^="rankScore_"]').forEach(el => { state.rankScore[el.id] = el.value; });
+  state.dropRates = Object.fromEntries(Object.keys(DEFAULT_DROP_RATES).map(id => [id, document.getElementById(id).value]));
 
   const modeRadio = document.querySelector('input[name="calcMode"]:checked');
   if (modeRadio) state.calcMode = modeRadio.value;
@@ -374,6 +353,13 @@ function loadFormState() {
     for (const [id, val] of Object.entries(state.rankScore)) {
       const el = document.getElementById(id);
       if (el) el.value = val;
+    }
+    if (state.dropRates && typeof state.dropRates === 'object') {
+      for (const id of Object.keys(DEFAULT_DROP_RATES)) {
+        if (typeof state.dropRates[id] === 'string' || typeof state.dropRates[id] === 'number') {
+          document.getElementById(id).value = state.dropRates[id];
+        }
+      }
     }
   }
 
@@ -461,23 +447,23 @@ function pct(x, total) {
 // キー:  ${type}_${rank} … 装備種類×ランクを表す識別子
 //
 // 最小周回数モード: 余り完全許容・周回数最小化
-//   制約: Σ x_s * [drop(s)=key] ≥ target_key （目標がある項目のみ）
+//   制約: Σ x_s * ドロップ期待数(s,key) ≥ target_key （目標がある項目のみ）
 //   目的: min Σ x_s
 //
 // 過不足ゼロモード: 余り不許容・不足最小化
-//   制約: Σ x_s * [drop(s)=key] + short_key = target_key （short_key ≥ 0 のため余りは発生しない）
+//   制約: Σ x_s * ドロップ期待数(s,key) + short_key = target_key （short_key ≥ 0 のため余りは発生しない）
 //   目的: 不足量最小 → その最適値を固定して周回数最小 → 両方を固定して後半ステージ優先
 //
 // ペナルティ調整モード: 余り許容＋ランク別ペナルティ（最小周回数モードの修正版）
-//   制約: Σ x_s * [drop(s)=key] − excess_key = target_key （excess_key ≥ 0 が余り量）
+//   制約: Σ x_s * ドロップ期待数(s,key) − excess_key = target_key （excess_key ≥ 0 が余り量）
 //   目的: min Σ x_s + Σ penaltyForRank(rank) * excess_key
 
 // 要求されているがどのステージからもドロップしない項目を検出
-function findUnreachableKeys(stages, targetList) {
+function findUnreachableKeys(stages, targetList, rates) {
   const supply = new Set();
   for (const s of stages) {
     for (const d of s.drops) {
-      if (!ITEM_TYPES.includes(d.type)) continue;
+      if (!ITEM_TYPES.includes(d.type) || dropRateForRank(d.rank, rates) === 0) continue;
       supply.add(`${d.type}_${d.rank}`);
     }
   }
@@ -489,7 +475,7 @@ function getStageVariableName(stage) {
 }
 
 // 計算結果（各ステージの周回数）から実収集量を種類×ランクごとに集計
-function computeActuals(stages, result) {
+function computeActuals(stages, result, rates) {
   const actuals = {};
   for (const s of stages) {
     const runs = result[getStageVariableName(s)] || 0;
@@ -497,7 +483,7 @@ function computeActuals(stages, result) {
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
-      actuals[key] = (actuals[key] || 0) + runs;
+      actuals[key] = (actuals[key] || 0) + runs * dropRateForRank(d.rank, rates);
     }
   }
   return actuals;
@@ -517,7 +503,7 @@ function buildKeyRows(targetList, actuals) {
 }
 
 // ─── 最小周回数モード: 余り完全許容・周回数最小化 ───────────
-function buildModelMinRuns(stages, activeList) {
+function buildModelMinRuns(stages, activeList, rates) {
   const constraints = {};
   const variables   = {};
 
@@ -528,7 +514,7 @@ function buildModelMinRuns(stages, activeList) {
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
-      if (constraints[`min_${key}`]) v[`min_${key}`] = (v[`min_${key}`] || 0) + 1;
+      if (constraints[`min_${key}`]) v[`min_${key}`] = (v[`min_${key}`] || 0) + dropRateForRank(d.rank, rates);
     }
     variables[getStageVariableName(s)] = v;
   }
@@ -537,7 +523,7 @@ function buildModelMinRuns(stages, activeList) {
 }
 
 // ─── 過不足ゼロモード: 余り不許容・不足最小化 ───────────────
-function buildModelMinShortfall(stages, activeList) {
+function buildModelMinShortfall(stages, activeList, rates) {
   const constraints = {};
   const variables   = {};
 
@@ -548,7 +534,7 @@ function buildModelMinShortfall(stages, activeList) {
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
-      if (constraints[`dev_${key}`]) v[`dev_${key}`] = (v[`dev_${key}`] || 0) + 1;
+      if (constraints[`dev_${key}`]) v[`dev_${key}`] = (v[`dev_${key}`] || 0) + dropRateForRank(d.rank, rates);
     }
     variables[getStageVariableName(s)] = v;
   }
@@ -561,7 +547,7 @@ function buildModelMinShortfall(stages, activeList) {
 }
 
 // ─── ペナルティ調整モード: 余り許容＋ランク別ペナルティ ─────
-function buildModelPenalizedExcess(stages, activeList) {
+function buildModelPenalizedExcess(stages, activeList, rates) {
   const constraints = {};
   const variables   = {};
 
@@ -572,7 +558,7 @@ function buildModelPenalizedExcess(stages, activeList) {
     for (const d of s.drops) {
       if (!ITEM_TYPES.includes(d.type)) continue;
       const key = `${d.type}_${d.rank}`;
-      if (constraints[`dev_${key}`]) v[`dev_${key}`] = (v[`dev_${key}`] || 0) + 1;
+      if (constraints[`dev_${key}`]) v[`dev_${key}`] = (v[`dev_${key}`] || 0) + dropRateForRank(d.rank, rates);
     }
     variables[getStageVariableName(s)] = v;
   }
@@ -622,7 +608,7 @@ function solveWithStagePreference(model, stages) {
   const optimum = objectiveValue(model, first);
   first.result = optimum;
   const secondModel = JSON.parse(JSON.stringify(model));
-  secondModel.constraints.fixed_primary_objective = { equal: optimum };
+  secondModel.constraints.fixed_primary_objective = { max: optimum };
   for (const v of Object.values(secondModel.variables)) {
     v.fixed_primary_objective = v[model.optimize] || 0;
     v[model.optimize] = 0;
@@ -646,15 +632,15 @@ function solveWithStagePreference(model, stages) {
 }
 
 // 余り禁止モード: 不足量 → 周回数 → 後半ステージの順に最適化する。
-function solveMinShortfall(stages, targetList) {
-  const model = buildModelMinShortfall(stages, targetList);
+function solveMinShortfall(stages, targetList, rates) {
+  const model = buildModelMinShortfall(stages, targetList, rates);
   const first = solveModel(model);
   if (!first.feasible) return first;
   if (!satisfiesModel(model, first)) throw new Error('不足最小化の解が制約を満たしていません。入力値を確認してください。');
   const optimum = objectiveValue(model, first);
   first.result = optimum;
   const runsModel = JSON.parse(JSON.stringify(model));
-  runsModel.constraints.fixed_shortfall = { equal: optimum };
+  runsModel.constraints.fixed_shortfall = { max: optimum };
   for (const v of Object.values(runsModel.variables)) {
     v.fixed_shortfall = v.obj || 0;
     v.obj = 0;
@@ -676,12 +662,11 @@ function solveMinShortfall(stages, targetList) {
 }
 
 // 余りが出た場合だけ、全項目が目標と等しい解の存在を直接確認する。
-// 各周回2個・非負ペナルティなら、余りなし解が存在するのに余るのは矛盾。
-function checkZeroExcess(result, stages, targetList) {
+function checkZeroExcess(result, stages, targetList, rates) {
   if (!result.feasible) return;
-  const actuals = computeActuals(stages, result);
+  const actuals = computeActuals(stages, result, rates);
   if (!targetList.some(it => (actuals[it.key] || 0) - it.target > 0.01)) return;
-  const exactModel = buildModelMinShortfall(stages, targetList);
+  const exactModel = buildModelMinShortfall(stages, targetList, rates);
   for (const name of Object.keys(exactModel.variables)) {
     if (name.startsWith('short_')) delete exactModel.variables[name];
     else exactModel.variables[name].obj = 1;
@@ -699,7 +684,7 @@ function renderOptimizationWarnings(result) {
   let h = '';
   if (result.optimizationWarning) h += `<p class="infeasible-warning">⚠ ${result.optimizationWarning}</p>`;
   if (result.zeroExcessFeasible === true) {
-    h += '<p class="infeasible-warning">⚠ 余りなしで目標を達成できる別の解が存在しますが、表示中の解には余りがあります。各周回2個ドロップの前提では数値誤差やデータの不整合が疑われます。この結果の余りを「不可避」とは判断しないでください。</p>';
+    h += '<p class="infeasible-warning">⚠ 期待値上、余りなしで目標を達成できる別の解が存在しますが、表示中の解には余りがあります。</p>';
   }
   return h;
 }
@@ -708,7 +693,7 @@ function renderOptimizationWarnings(result) {
 function renderKeyTable(rows, mode) {
   const diffLabel = mode === 'excess' ? '余り' : '不足';
   let h = `<div class="tbl-wrap"><table><thead><tr>
-    <th>装備種類</th><th>ランク</th><th>目標</th><th>収集量</th><th>${diffLabel}</th>
+    <th>装備種類</th><th>ランク</th><th>目標</th><th>期待収集量</th><th>${diffLabel}</th>
   </tr></thead><tbody>`;
   for (const r of rows) {
     const diff    = mode === 'excess' ? (r.actual - r.target) : (r.target - r.actual);
@@ -744,29 +729,22 @@ function renderStageRunsTable(stages, result) {
   return h;
 }
 
-function renderDropEstimate(totalRuns) {
-  const estimatedRuns = Math.ceil(totalRuns * 1.2);
-  const candyNeeded = estimatedRuns * 10;
-  return `<p data-style="s024">実際のドロップはランダムです。総周回数はこれに1.2をかけた程度の数、すなわち <span data-style="s025">${estimatedRuns}</span> となります。必要キャンディ量は <span data-style="s025">${candyNeeded}</span> です。</p>`;
-}
-
-function renderMinRunsResult(res, stages, targetList) {
+function renderMinRunsResult(res, stages, targetList, rates) {
   let h = `<h3 class="result-h">最小周回数モード（余り許容）</h3>`;
   if (!res.feasible) {
     h += '<p data-style="s026">⚠ 計算できませんでした。</p>';
     return h;
   }
-  const actuals    = computeActuals(stages, res);
+  const actuals    = computeActuals(stages, res, rates);
   const totalRuns  = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
   const rows       = buildKeyRows(targetList, actuals);
   const excessRows = rows.filter(r => r.actual - r.target > 0.01);
 
-  h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
-  h += renderDropEstimate(totalRuns);
+  h += `<div class="result-summary"><div class="kv"><span>期待値に基づく総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderOptimizationWarnings(res);
   h += excessRows.length > 0
     ? `<p data-style="s027"><span class="badge badge-unavoidable">${res.zeroExcessFeasible === false ? '余りが発生（連続量モデルでも不可避）' : '余りが発生'}</span> この解では以下の項目に余りが生じます。${res.zeroExcessFeasible === undefined ? '余りなし解の有無は確認できませんでした。' : ''}</p>`
-    : `<p data-style="s027"><span class="badge badge-avoidable">余りなし</span> すべての項目がちょうど目標どおりに集まりました。</p>`;
+    : `<p data-style="s027"><span class="badge badge-avoidable">余りなし</span> 期待収集量に余りはありません。</p>`;
   h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'excess');
   h += '</details>';
@@ -774,23 +752,22 @@ function renderMinRunsResult(res, stages, targetList) {
   return h;
 }
 
-function renderNoExcessResult(res, stages, targetList) {
+function renderNoExcessResult(res, stages, targetList, rates) {
   let h = `<h3 class="result-h">過不足ゼロモード（余り不許容）</h3>`;
   if (!res.feasible) {
     h += '<p data-style="s026">⚠ 計算できませんでした。</p>';
     return h;
   }
-  const actuals   = computeActuals(stages, res);
+  const actuals   = computeActuals(stages, res, rates);
   const totalRuns = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
   const rows      = buildKeyRows(targetList, actuals);
   const shortRows = rows.filter(r => r.target - r.actual > 0.01);
 
-  h += `<div class="result-summary"><div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
-  h += renderDropEstimate(totalRuns);
+  h += `<div class="result-summary"><div class="kv"><span>期待値に基づく総周回数</span><span>${sig3(totalRuns)}</span></div></div>`;
   h += renderOptimizationWarnings(res);
   h += shortRows.length > 0
     ? `<p data-style="s027"><span class="badge badge-unavoidable">要求数に未達の項目あり</span> 余りを一切出さない制約の下では、以下の項目が要求数に届きません。</p>`
-    : `<p data-style="s027"><span class="badge badge-avoidable">要求数達成</span> 余りを出さずにすべての項目が目標どおりに集まりました。</p>`;
+    : `<p data-style="s027"><span class="badge badge-avoidable">要求数達成</span> 期待収集量は余りを出さずにすべての項目で目標どおりです。</p>`;
   h += '<details class="result-acquired"><summary class="accordion-summary">詳細な獲得量</summary>';
   h += renderKeyTable(rows, 'shortfall');
   h += '</details>';
@@ -798,24 +775,23 @@ function renderNoExcessResult(res, stages, targetList) {
   return h;
 }
 
-function renderPenalizedResult(res, stages, targetList) {
+function renderPenalizedResult(res, stages, targetList, rates) {
   let h = `<h3 class="result-h">ペナルティ調整モード（余り許容・ランク別スコア）</h3>`;
   if (!res.feasible) {
     h += '<p data-style="s026">⚠ 計算できませんでした。</p>';
     return h;
   }
-  const actuals      = computeActuals(stages, res);
+  const actuals      = computeActuals(stages, res, rates);
   const totalRuns    = stages.reduce((s, st) => s + (res[getStageVariableName(st)] || 0), 0);
   const rows         = buildKeyRows(targetList, actuals);
   const excessRows   = rows.filter(r => r.actual - r.target > 0.01);
   const totalPenalty = rows.reduce((s, r) => s + Math.max(0, r.actual - r.target) * penaltyForRank(r.rank), 0);
 
   h += `<div class="result-summary">
-    <div class="kv"><span>100%ドロップの場合の総周回数</span><span>${sig3(totalRuns)}</span></div>
+    <div class="kv"><span>期待値に基づく総周回数</span><span>${sig3(totalRuns)}</span></div>
     <div class="kv"><span>余りペナルティ合計</span><span>${sig3(totalPenalty)}</span></div>
     <div class="kv"><span>目的関数値（周回数＋ペナルティ）</span><span>${sig3(res.result || 0)}</span></div>
   </div>`;
-  h += renderDropEstimate(totalRuns);
   h += renderOptimizationWarnings(res);
   h += excessRows.length > 0
     ? `<p data-style="s027"><span class="badge badge-unavoidable">余りが発生</span> ランク別スコアに応じたペナルティ込みで、周回数＋ペナルティを最小化し、その最適値を固定して後半ステージを優先した結果です。${res.zeroExcessFeasible === undefined ? '余りなし解の有無は確認できませんでした。' : ''}</p>`
@@ -836,13 +812,16 @@ function runCalc() {
   resultDiv.innerHTML = '<p class="calc-status">⏳ 計算中...</p>';
 
   try {
+    const rates = readDropRates();
+    saveFormState();
     if (typeof solver === 'undefined') {
       throw new Error('LP Solver が読み込まれていません。インターネット接続を確認してください。');
     }
     const { minRank, maxRank } = currentAnalysis;
+    if (maxRank > 10) throw new Error(`ランク${maxRank}のドロップ率は未設定です。`);
     const targetList = getAllTargets(minRank, maxRank);
 
-    const unreachable    = findUnreachableKeys(currentStages, targetList);
+    const unreachable    = findUnreachableKeys(currentStages, targetList, rates);
     const unreachableSet = new Set(unreachable.map(u => u.key));
     const activeList     = targetList.filter(it => it.target > 0 && !unreachableSet.has(it.key));
     const noExcessList   = targetList;
@@ -851,21 +830,21 @@ function runCalc() {
     let html = '';
     if (unreachable.length > 0) {
       const list = unreachable.map(u => `${getTypeLabel(ITEM_TYPES.indexOf(u.type))} Rank${u.rank}（目標${u.target}）`).join('、');
-      html += `<div class="infeasible-warning">⚠ 以下の項目はどのステージからもドロップしないため、要求数を満たすことができません：${list}</div>`;
+      html += `<div class="infeasible-warning">⚠ 以下の項目はドロップするステージがないか、ドロップ率が0%のため、要求数を満たすことができません：${list}</div>`;
     }
 
     const mode = getSelectedCalcMode();
     if (mode === 'no-extra') {
-      const res = solveMinShortfall(currentStages, noExcessList);
-      html += renderNoExcessResult(res, currentStages, targetList);
+      const res = solveMinShortfall(currentStages, noExcessList, rates);
+      html += renderNoExcessResult(res, currentStages, targetList, rates);
     } else if (mode === 'advanced') {
-      const res = solveWithStagePreference(buildModelPenalizedExcess(currentStages, penalizedList), currentStages);
-      checkZeroExcess(res, currentStages, targetList);
-      html += renderPenalizedResult(res, currentStages, targetList);
+      const res = solveWithStagePreference(buildModelPenalizedExcess(currentStages, penalizedList, rates), currentStages);
+      checkZeroExcess(res, currentStages, targetList, rates);
+      html += renderPenalizedResult(res, currentStages, targetList, rates);
     } else {
-      const res = solveWithStagePreference(buildModelMinRuns(currentStages, activeList), currentStages);
-      checkZeroExcess(res, currentStages, targetList);
-      html += renderMinRunsResult(res, currentStages, targetList);
+      const res = solveWithStagePreference(buildModelMinRuns(currentStages, activeList, rates), currentStages);
+      checkZeroExcess(res, currentStages, targetList, rates);
+      html += renderMinRunsResult(res, currentStages, targetList, rates);
     }
 
     resultDiv.innerHTML = html;
@@ -880,11 +859,7 @@ function runCalc() {
 // ─── 初期化 ──────────────────────────────────────────────
 async function init() {
   try {
-    const response = await fetch('equipment.txt');
-    if (!response.ok) throw new Error(`equipment.txt の読み込みに失敗しました (${response.status})`);
-
-    const stages = parseData(await response.text());
-    if (stages.length === 0) throw new Error('equipment.txt に有効な装備データがありません。');
+    const stages = await loadEquipmentData();
     processData(stages);
   } catch (err) {
     document.getElementById('calcResult').innerHTML =

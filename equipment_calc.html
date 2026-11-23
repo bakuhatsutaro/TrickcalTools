@@ -25,6 +25,8 @@
   </nav>
   <main>
     <div class="intro-card">ここでは<strong>01 各装備の必要数</strong>で不足している装備の個数を入力し、<strong>02 装備設計図の必要数および保有数</strong>で保有している装備設計図の個数を入力します。ここで入力した情報は<strong>周回計画</strong>で用いることができます。<strong>装備管理</strong>で入力した使徒データを用いる場合は、先に<strong>03 使徒の装備ランクの目標値</strong>を設定してください。</div>
+    <p id="equipment-data-status" role="status">装備データを読み込んでいます。</p>
+    <div id="calculator-content" inert>
     <section aria-labelledby="s01-title">
       <h2 id="s01-title"><span class="step">01</span>各装備の必要数</h2>
       <h3 class="subsection-title">所持済み使徒の装備必要数</h3>
@@ -103,7 +105,7 @@
         <button class="secondary" id="selectAllBtn">表示中を全て対象にする</button>
         <button class="secondary" id="deselectAllBtn">表示中を全て対象外にする</button>
         <label>一括目標ランク：
-          <input type="number" id="bulkTargetRank" min="2" max="9" step="1" value="9">
+          <input type="number" id="bulkTargetRank" min="2" step="1">
         </label>
         <button id="applyBulkBtn">対象の使徒に一括適用</button>
       </div>
@@ -123,10 +125,12 @@
         </table>
       </div>
     </section>
+    </div>
   </main>
   <footer>入力内容はこのブラウザーに <code>trickcal_equipment_plan</code> として自動保存されます。</footer>
 
   <script src="apostles.js"></script>
+  <script src="equipment-data.js"></script>
   <script>
     'use strict';
 
@@ -136,10 +140,11 @@
     const CLOCKWISE_ORDER = [0, 1, 2, 3, 4, 5, 6];
     const NON_WEAPON_TYPES = ITEM_TYPES.filter(t => !t.endsWith('武器'));
     const MIN_RANK = 2;
-    const MAX_RANK = 9;
+    let MAX_RANK;
 
     // 装備1個をランクXまで強化するのに必要な設計図数（ランクごと。種類によらず共通）
     const RECIPE = {
+      10: { 10: 64 },
       9: { 9: 52, 8: 20 },
       8: { 8: 46, 7: 18 },
       7: { 7: 42 },
@@ -595,7 +600,7 @@
       for (const a of apostleList) {
         const st = selfState.apostleTargets[a.id];
         if (!st || !st.active || (!a.owned && !selfState.includeUnownedInImport)) continue;
-        const target = st.targetRank;
+        const target = Math.min(MAX_RANK, st.targetRank);
         if (!target || target < MIN_RANK) continue;
         const weaponType = a.attackType ? `${a.attackType}武器` : a.slots.find(type => type.endsWith('武器'));
         if (!weaponType) continue;
@@ -625,7 +630,22 @@
     });
 
     // ─── 初期化 ──────────────────────────────────────────
-    (function init() {
+    async function init() {
+      const status = document.getElementById('equipment-data-status');
+      try {
+        MAX_RANK = analyzeData(await loadEquipmentData()).maxRank;
+        for (let rank = MIN_RANK; rank <= MAX_RANK; rank++) {
+          if (!RECIPE[rank]) throw new Error(`ランク${rank}の装備レシピが未登録です。equipment_calc.html の RECIPE に登録してください。`);
+        }
+      } catch (error) {
+        status.textContent = `装備データを利用できません。${error.message} ローカルHTTPサーバーと装備レシピを確認してください。`;
+        status.setAttribute('role', 'alert');
+        console.error(error);
+        return;
+      }
+      const bulkTarget = document.getElementById('bulkTargetRank');
+      bulkTarget.max = String(MAX_RANK);
+      bulkTarget.value = String(MAX_RANK);
       loadSelfState();
       document.getElementById('reservePhysical').value = getReserveEquipment('physical');
       document.getElementById('reserveMagical').value = getReserveEquipment('magical');
@@ -650,7 +670,10 @@
       renderReq01Table();
       renderReq02Table();
       reloadApostleData();
-    })();
+      status.hidden = true;
+      document.getElementById('calculator-content').inert = false;
+    }
+    init();
   </script>
 </body>
 

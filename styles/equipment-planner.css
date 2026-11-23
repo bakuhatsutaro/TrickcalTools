@@ -290,6 +290,10 @@
     .badge-unavoidable { background: #fff0f0; color: #a73c30; border: 1px solid #d7a6aa; }
     .badge-avoidable { background: #edf8f0; color: #27734b; border: 1px solid #a6d7b1; }
     .penalty-row label { color: #506276; }
+    .drop-rates { margin: 0 0 14px; color: #506276; font-size: .9rem; }
+    .drop-rate-inputs { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 4px 0; }
+    .drop-rate-inputs input { width: 80px; text-align: right; }
+    .drop-rate-help { font-size: .85rem; }
     .accordion-summary { color: #182b3e; font-weight: 600; }
     .result-acquired { margin: 12px 0 14px; }
     .tool-nav {
@@ -359,7 +363,5 @@
 [data-style="s021"] { font-size:0.82rem;color:#aaa;display:flex;align-items:center;gap:4px }
 [data-style="s022"] { width:64px }
 [data-style="s023"] { color:#182b3e;font-size:0.85rem;margin:14px 0 6px }
-[data-style="s024"] { margin:8px 0;font-size:0.88rem;color:#506276 }
-[data-style="s025"] { color:#1768ce;font-weight:bold;font-size:1.1rem }
 [data-style="s026"] { color:#a73c30 }
 [data-style="s027"] { margin:8px 0 }
